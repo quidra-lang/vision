@@ -1,6 +1,6 @@
 import vision
 
-auto loaded = image.read("input.png")
+tensor<uint8> | error loaded = image.read("input.png")
 match loaded
     tensor<uint8> pixels
         tensor<uint8> resized = vision.resize(
