@@ -35,10 +35,28 @@ print(cropped[0, 1, 0].item())
 print(resized[0, 3, 3].item())
 print(flipped[0, 0, 0].item())
 print(turned[0, 0, 1].item())
+
+// Morphology must not retain uint8-specific sentinels such as 0 or 255.
+tensor<int16> signed_pixels = tensor.zeros<int16>([1, 1, 3])
+signed_pixels[0, 0, 0] = int16(-10)
+signed_pixels[0, 0, 1] = int16(-5)
+signed_pixels[0, 0, 2] = int16(-20)
+tensor<int16> signed_dilated = vision.dilate(signed_pixels, radius = 1)
+tensor<int16> signed_eroded = vision.erode(signed_pixels, radius = 1)
+print(signed_dilated[0, 0, 0].item())
+print(signed_eroded[0, 0, 1].item())
+
+tensor<uint16> bright = tensor.zeros<uint16>([1, 1, 2])
+bright[0, 0, 0] = uint16(1000)
+bright[0, 0, 1] = uint16(2000)
+tensor<uint16> bright_dilated = vision.dilate(bright, radius = 1)
+tensor<uint16> bright_eroded = vision.erode(bright, radius = 1)
+print(bright_dilated[0, 0, 0].item())
+print(bright_eroded[0, 0, 1].item())
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-dtypes.qui")"
-expected="$(printf '150\n29\n4000\n4000\n2000\n1000')"
+expected="$(printf '150\n29\n4000\n4000\n2000\n1000\n-5\n-20\n2000\n1000')"
 if [[ "$output" != "$expected" ]]; then
     echo "unexpected vision dtype output:" >&2
     printf '%s\n' "$output" >&2
