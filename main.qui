@@ -1,0 +1,186 @@
+tensor<uint8> crop(
+    tensor<uint8> pixels,
+    int top,
+    int left,
+    int height,
+    int width
+)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>([shape[0], height, width])
+    for channel in range(shape[0])
+        for y in range(height)
+            for x in range(width)
+                result[channel, y, x] = pixels[channel, top + y, left + x].item()
+    return result
+
+tensor<uint8> resize(tensor<uint8> pixels, int height, int width)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>([shape[0], height, width])
+    for channel in range(shape[0])
+        for y in range(height)
+            int source_y = y * shape[1] / height
+            for x in range(width)
+                int source_x = x * shape[2] / width
+                result[channel, y, x] = pixels[channel, source_y, source_x].item()
+    return result
+
+tensor<uint8> flip_horizontal(tensor<uint8> pixels)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>(shape)
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                result[channel, y, x] = pixels[
+                    channel, y, shape[2] - 1 - x
+                ].item()
+    return result
+
+tensor<uint8> flip_vertical(tensor<uint8> pixels)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>(shape)
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                result[channel, y, x] = pixels[
+                    channel, shape[1] - 1 - y, x
+                ].item()
+    return result
+
+tensor<uint8> rotate90(tensor<uint8> pixels)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>([shape[0], shape[2], shape[1]])
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                result[channel, x, shape[1] - 1 - y] = pixels[channel, y, x].item()
+    return result
+
+tensor<uint8> rotate180(tensor<uint8> pixels)
+    return flip_vertical(flip_horizontal(pixels))
+
+tensor<uint8> rotate270(tensor<uint8> pixels)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>([shape[0], shape[2], shape[1]])
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                result[channel, shape[2] - 1 - x, y] = pixels[channel, y, x].item()
+    return result
+
+tensor<uint8> grayscale(tensor<uint8> pixels)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>([1, shape[1], shape[2]])
+    for y in range(shape[1])
+        for x in range(shape[2])
+            if shape[0] == 1
+                result[0, y, x] = pixels[0, y, x].item()
+            else
+                int red = int(pixels[0, y, x].item())
+                int green = int(pixels[1, y, x].item())
+                int blue = int(pixels[2, y, x].item())
+                result[0, y, x] = uint8((77 * red + 150 * green + 29 * blue) / 256)
+    return result
+
+tensor<uint8> threshold(
+    tensor<uint8> pixels,
+    uint8 cutoff,
+    uint8 low = uint8(0),
+    uint8 high = uint8(255)
+)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>(shape)
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                if pixels[channel, y, x].item() >= cutoff
+                    result[channel, y, x] = high
+                else
+                    result[channel, y, x] = low
+    return result
+
+tensor<uint8> blur(tensor<uint8> pixels, int radius = 1)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>(shape)
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                int total = 0
+                int count = 0
+                for offset_y in range(0 - radius, radius + 1)
+                    int source_y = y + offset_y
+                    if source_y >= 0 and source_y < shape[1]
+                        for offset_x in range(0 - radius, radius + 1)
+                            int source_x = x + offset_x
+                            if source_x >= 0 and source_x < shape[2]
+                                total += int(pixels[channel, source_y, source_x].item())
+                                count += 1
+                result[channel, y, x] = uint8(total / count)
+    return result
+
+tensor<uint8> filter(
+    tensor<uint8> pixels,
+    tensor<int> kernel,
+    int divisor = 1,
+    int offset = 0
+)
+    int[] shape = pixels.shape()
+    int[] kernel_shape = kernel.shape()
+    int center_y = kernel_shape[0] / 2
+    int center_x = kernel_shape[1] / 2
+    tensor<uint8> result = tensor.zeros<uint8>(shape)
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                int total = 0
+                for kernel_y in range(kernel_shape[0])
+                    int source_y = y + kernel_y - center_y
+                    if source_y >= 0 and source_y < shape[1]
+                        for kernel_x in range(kernel_shape[1])
+                            int source_x = x + kernel_x - center_x
+                            if source_x >= 0 and source_x < shape[2]
+                                total += int(pixels[channel, source_y, source_x].item()) * kernel[kernel_y, kernel_x].item()
+                int value = total / divisor + offset
+                if value < 0
+                    value = 0
+                if value > 255
+                    value = 255
+                result[channel, y, x] = uint8(value)
+    return result
+
+tensor<uint8> dilate(tensor<uint8> pixels, int radius = 1)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>(shape)
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                int maximum = 0
+                for offset_y in range(0 - radius, radius + 1)
+                    int source_y = y + offset_y
+                    if source_y >= 0 and source_y < shape[1]
+                        for offset_x in range(0 - radius, radius + 1)
+                            int source_x = x + offset_x
+                            if source_x >= 0 and source_x < shape[2]
+                                int candidate = int(pixels[channel, source_y, source_x].item())
+                                if candidate > maximum
+                                    maximum = candidate
+                result[channel, y, x] = uint8(maximum)
+    return result
+
+tensor<uint8> erode(tensor<uint8> pixels, int radius = 1)
+    int[] shape = pixels.shape()
+    tensor<uint8> result = tensor.zeros<uint8>(shape)
+    for channel in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                int minimum = 255
+                for offset_y in range(0 - radius, radius + 1)
+                    int source_y = y + offset_y
+                    if source_y >= 0 and source_y < shape[1]
+                        for offset_x in range(0 - radius, radius + 1)
+                            int source_x = x + offset_x
+                            if source_x >= 0 and source_x < shape[2]
+                                int candidate = int(pixels[channel, source_y, source_x].item())
+                                if candidate < minimum
+                                    minimum = candidate
+                result[channel, y, x] = uint8(minimum)
+    return result

@@ -1,0 +1,20 @@
+import vision
+
+auto loaded = image.read("input.png")
+match loaded
+    tensor<uint8> pixels
+        tensor<uint8> resized = vision.resize(
+            pixels, height = 256, width = 256
+        )
+        tensor<uint8> grayscale = vision.grayscale(resized)
+        tensor<uint8> edges = vision.threshold(
+            grayscale, cutoff = uint8(128)
+        )
+        auto written = image.write("output.png", edges)
+        match written
+            void
+                print("saved")
+            error problem
+                print(problem)
+    error problem
+        print(problem)
