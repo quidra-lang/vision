@@ -1,6 +1,6 @@
 import vision
 
-int | error process(tensor<uint8> pixels)
+int | error transform_image(tensor<uint8> pixels)
     tensor<uint8> resized = try vision.resize(
         pixels, height = 256, width = 256
     )
@@ -19,10 +19,10 @@ int | error process(tensor<uint8> pixels)
 tensor<uint8> | error loaded = image.read("input.png")
 match loaded
     tensor<uint8> pixels
-        auto processed = process(pixels)
-        match processed
+        auto transformed = transform_image(pixels)
+        match transformed
             int
-                int ignored = processed
+                int ignored = transformed
             error problem
                 print(problem)
     error problem
