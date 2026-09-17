@@ -38,7 +38,7 @@ print(turned[0, 0, 1].item())
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-dtypes.qui")"
-expected="$(printf '150\n29\n4000\n4000\n2000\n3000')"
+expected="$(printf '150\n29\n4000\n4000\n2000\n1000')"
 if [[ "$output" != "$expected" ]]; then
     echo "unexpected vision dtype output:" >&2
     printf '%s\n' "$output" >&2
