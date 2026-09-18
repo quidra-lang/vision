@@ -61,6 +61,14 @@ int | error run()
     tensor<uint8> gpu_rotate = (try vision.rotate90(gpu)).cpu()
     print(cpu_rotate[0, 0, 1].item() == gpu_rotate[0, 0, 1].item())
 
+    tensor<uint8> cpu_rotate180 = try vision.rotate180(cpu)
+    tensor<uint8> gpu_rotate180 = (try vision.rotate180(gpu)).cpu()
+    print(cpu_rotate180[0, 0, 0].item() == gpu_rotate180[0, 0, 0].item())
+
+    tensor<uint8> cpu_rotate270 = try vision.rotate270(cpu)
+    tensor<uint8> gpu_rotate270 = (try vision.rotate270(gpu)).cpu()
+    print(cpu_rotate270[0, 1, 0].item() == gpu_rotate270[0, 1, 0].item())
+
     tensor<uint8> cpu_gray = try vision.grayscale(cpu)
     tensor<uint8> gpu_gray = (try vision.grayscale(gpu)).cpu()
     print(cpu_gray[0, 0, 0].item() == gpu_gray[0, 0, 0].item())
@@ -103,7 +111,7 @@ match result
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-real-gpu.qui")"
-expected="$(printf 'true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue')"
+expected="$(printf 'true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue')"
 if [[ "$output" != "$expected" ]]; then
     echo "Vision real GPU numerical equivalence failed on gpu($GPU_INDEX)" >&2
     printf '%s\n' "$output" >&2
