@@ -7,6 +7,9 @@ PACKAGE_ROOT="$(dirname "$REPOSITORY_ROOT")"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+# Effective only with the core's test-only fake GPU backend.
+export QUIDRA_TEST_FAKE_GPU_COUNT=2
+
 cat > "$TMP/device-check.qui" <<'QUI'
 import vision
 
@@ -58,6 +61,59 @@ fi
 if ! grep -Fq "gpu(2147483647) is not available" "$TMP/transfer.err"; then
     echo "missing explicit unavailable-GPU transfer diagnostic" >&2
     cat "$TMP/transfer.err" >&2
+    exit 1
+fi
+
+cat > "$TMP/vision-no-fallback.qui" <<'QUI'
+import vision
+
+tensor<uint8> input = tensor.ones<uint8>([1, 2, 2], gpu = 0)
+tensor<uint8> | error transformed = vision.flip_horizontal(input)
+match transformed
+    tensor<uint8> output
+        print(output.shape()[0])
+    error problem
+        print(problem)
+QUI
+
+set +e
+QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-no-fallback.qui" >"$TMP/vision.out" 2>"$TMP/vision.err"
+status=$?
+set -e
+if [[ $status -ne 101 ]]; then
+    echo "expected unsupported GPU Vision operation to fail with status 101, got $status" >&2
+    cat "$TMP/vision.out" >&2 || true
+    cat "$TMP/vision.err" >&2 || true
+    exit 1
+fi
+if ! grep -Fq "tensor.item is not supported on gpu(0)" "$TMP/vision.err"; then
+    echo "Vision GPU operation did not fail at the explicit unsupported boundary" >&2
+    cat "$TMP/vision.err" >&2
+    exit 1
+fi
+if [[ -s "$TMP/vision.out" ]]; then
+    echo "Vision unexpectedly produced a CPU result for a GPU input" >&2
+    cat "$TMP/vision.out" >&2
+    exit 1
+fi
+
+cat > "$TMP/image-write-gpu.qui" <<'QUI'
+tensor<uint8> input = tensor.ones<uint8>([1, 1, 1], gpu = 0)
+auto written = image.write("should-not-exist.png", input)
+match written
+    void
+        print("unexpected success")
+    error problem
+        print(problem)
+QUI
+
+write_output="$(cd "$TMP" && "$QUIDRA" run "$TMP/image-write-gpu.qui")"
+if [[ "$write_output" != "image.write is not supported on gpu(0)" ]]; then
+    echo "unexpected GPU image.write result: $write_output" >&2
+    exit 1
+fi
+if [[ -e "$TMP/should-not-exist.png" ]]; then
+    echo "GPU image.write unexpectedly wrote a CPU-fallback file" >&2
     exit 1
 fi
 
