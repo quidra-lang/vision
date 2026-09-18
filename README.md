@@ -81,17 +81,22 @@ tensor<uint8> image_cpu = try image.read("input.png")
 tensor<uint8> image_gpu = image_cpu.gpu(0)
 ```
 
-Vision never moves an input to CPU or GPU implicitly. A GPU-capable Vision
-operation must execute on the input device and return its result on that same
-device. If a Vision operation has no implementation for the active GPU backend,
-it fails explicitly rather than iterating over hidden CPU storage or returning a
-CPU result. The public Vision API is vendor-independent; backend selection is an
-implementation detail of Quidra/Vision.
+Vision never moves an input to CPU or GPU implicitly. Tensor geometry
+(`crop`, `resize`, flips and rotations), grayscale/threshold, blur/filter, and
+morphology execute through Quidra's device kernels and keep GPU results on the
+same GPU. If a backend/dtype combination is unavailable, the operation fails
+explicitly rather than iterating over hidden CPU storage or returning a CPU
+result. Codec and filesystem APIs remain host operations, so writing a GPU tensor
+still requires an explicit `.cpu()`. The public Vision API is vendor-independent;
+backend selection is an implementation detail of Quidra/Vision.
 
 The released package dependency remains tied only to released Quidra versions.
 During development, CI additionally builds the current Quidra `feature` branch
-and checks the GPU placement/transfer contracts without changing
-`requires.quidra` to an unreleased branch.
+and checks GPU placement and numerical contracts without changing
+`requires.quidra` to an unreleased branch. On real GPU hardware,
+`tests/real_gpu_integration.sh /path/to/quidra` compares CPU and GPU Vision
+results; set `QUIDRA_REQUIRE_REAL_GPU=1` in a hardware runner to require the
+device instead of skipping when none is present.
 
 ## Example
 
