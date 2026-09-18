@@ -64,6 +64,32 @@ if ! grep -Fq "gpu(2147483647) is not available" "$TMP/transfer.err"; then
     exit 1
 fi
 
+expect_device_failure() {
+    local source="$1"
+    local expected="$2"
+    set +e
+    QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$source" >"$source.out" 2>"$source.err"
+    local status=$?
+    set -e
+    if [[ $status -ne 101 ]]; then
+        echo "expected runtime status 101 for $source, got $status" >&2
+        cat "$source.out" >&2 || true
+        cat "$source.err" >&2 || true
+        exit 1
+    fi
+    if ! grep -Fq "$expected" "$source.err"; then
+        echo "missing device diagnostic '$expected'" >&2
+        cat "$source.err" >&2
+        exit 1
+    fi
+    if [[ -s "$source.out" ]]; then
+        echo "Vision produced CPU output before GPU failure" >&2
+        cat "$source.out" >&2
+        exit 1
+    fi
+}
+
+
 cat > "$TMP/vision-gpu-compute.qui" <<'QUI'
 import vision
 
