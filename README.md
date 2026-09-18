@@ -53,7 +53,13 @@ match loaded
 The explicit expected type above says that this pipeline accepts an 8-bit
 image. If the decoded file has another representable dtype, `image.read`
 returns `error` rather than silently converting it. Use `auto` plus exhaustive
-matching only when the source dtype is genuinely unknown.
+matching only when the source dtype is genuinely unknown. When RGB itself is a
+requirement, use a leading-shape constraint such as
+`tensor<uint8, 3> | error`; because image tensors are CHW, the leading extent
+is the channel count. This checks the source without conversion. Use
+`image.read(path, channels = 3)` only when converting grayscale/RGBA input to
+RGB is intended, and `dtype = float32` only when an explicit sample-type
+conversion is intended.
 
 For development, place the repository in a directory listed by
 `QUIDRA_PACKAGE_PATH` instead of installing it.
