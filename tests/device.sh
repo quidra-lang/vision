@@ -67,8 +67,8 @@ fi
 cat > "$TMP/vision-no-fallback.qui" <<'QUI'
 import vision
 
-tensor<uint8> input = tensor.ones<uint8>([1, 2, 2], gpu = 0)
-tensor<uint8> | error transformed = vision.flip_horizontal(input)
+tensor<uint8> pixels_gpu = tensor.ones<uint8>([1, 2, 2], gpu = 0)
+tensor<uint8> | error transformed = vision.flip_horizontal(pixels_gpu)
 match transformed
     tensor<uint8> output
         print(output.shape()[0])
@@ -98,8 +98,8 @@ if [[ -s "$TMP/vision.out" ]]; then
 fi
 
 cat > "$TMP/image-write-gpu.qui" <<'QUI'
-tensor<uint8> input = tensor.ones<uint8>([1, 1, 1], gpu = 0)
-auto written = image.write("should-not-exist.png", input)
+tensor<uint8> image_gpu = tensor.ones<uint8>([1, 1, 1], gpu = 0)
+auto written = image.write("should-not-exist.png", image_gpu)
 match written
     void
         print("unexpected success")
