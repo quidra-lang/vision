@@ -15,64 +15,24 @@ kernels, and a zero filter divisor.
 
 ## Install
 
-Clone this repository and install it with the Quidra package command:
+vision v0.1.0 supports Quidra `>=0.2.0 <0.3.0`.
+
+With Quidra v0.2.0, install the exact released source:
 
 ```sh
+git clone --depth 1 --branch v0.1.0 https://github.com/quidra-lang/vision.git
+cd vision
 quidra package install . --name vision
 ```
 
-Then import it normally:
+Quidra versions that provide the release-aware short package CLI can install the
+same immutable release directly:
 
-```quidra
-import vision
-
-int | error transform(tensor<uint8> pixels)
-    tensor<uint8> resized = try vision.resize(
-        pixels, height = 256, width = 256
-    )
-    auto written = image.write("output.png", resized)
-    match written
-        void
-            return 0
-        error problem
-            return problem
-
-tensor<uint8> | error loaded = image.read("input.png")
-match loaded
-    tensor<uint8> pixels
-        auto result = transform(pixels)
-        match result
-            int
-                print("saved")
-            error problem
-                print(problem)
-    error problem
-        print(problem)
+```sh
+quidra install vision@0.1.0
 ```
 
-The explicit expected type above says that this pipeline accepts an 8-bit
-image. If the decoded file has another representable dtype, `image.read`
-returns `error` rather than silently converting it. Use `auto` plus exhaustive
-matching only when the source dtype is genuinely unknown. When RGB itself is a
-requirement, use the exact-rank shape constraint
-`tensor<uint8><3, _, _> | error`; image tensors are CHW rank-3 values, so the
-first extent is the channel count and the two `_` slots require the height and
-width axes without constraining their extents. This checks the source without
-conversion. Use
-`image.read(path, channels = 3)` only when converting grayscale/RGBA input to
-RGB is intended, and `dtype = float32` only when an explicit sample-type
-conversion is intended.
-
-For development, place the repository in a directory listed by
-`QUIDRA_PACKAGE_PATH` instead of installing it.
-
-## Data layout
-
-Images are rank-3 CHW tensors: channel, height, width. Grayscale images have one
-channel; color images normally have three or four channels.
-
-`vision` does not normalize or reinterpret sample values. Dtype-preserving
-operations return the same `tensor<T>` element type they receive.
+Then import it normally:
 
 ## API
 
@@ -113,6 +73,10 @@ and `crop` requires the requested rectangle to lie inside the image.
 ## Example
 
 See [`examples/process.qui`](examples/process.qui).
+
+## Development
+
+See [`docs/development.md`](docs/development.md) for the canonical main/develop and release procedure.
 
 ## License
 
