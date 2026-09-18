@@ -70,6 +70,34 @@ to the `uint8` range. `blur` averages the window. `dilate` takes the maximum and
 operation shrinks the window at the border rather than inventing padded values,
 and `crop` requires the requested rectangle to lie inside the image.
 
+## Device placement
+
+Vision uses Quidra's tensor placement semantics directly. Image decoding through
+the standard `image.read` API produces a CPU tensor by default. Moving image
+data to a GPU is always an explicit caller action:
+
+```quidra
+tensor<uint8> image_cpu = try image.read("input.png")
+tensor<uint8> image_gpu = image_cpu.gpu(0)
+```
+
+Vision never moves an input to CPU or GPU implicitly. Tensor geometry
+(`crop`, `resize`, flips and rotations), grayscale/threshold, blur/filter, and
+morphology execute through Quidra's device kernels and keep GPU results on the
+same GPU. If a backend/dtype combination is unavailable, the operation fails
+explicitly rather than iterating over hidden CPU storage or returning a CPU
+result. Codec and filesystem APIs remain host operations, so writing a GPU tensor
+still requires an explicit `.cpu()`. The public Vision API is vendor-independent;
+backend selection is an implementation detail of Quidra/Vision.
+
+The released package dependency remains tied only to released Quidra versions.
+During development, CI additionally builds the current Quidra `feature` branch
+and checks GPU placement and numerical contracts without changing
+`requires.quidra` to an unreleased branch. On real GPU hardware,
+`tests/real_gpu_integration.sh /path/to/quidra` compares CPU and GPU Vision
+results; set `QUIDRA_REQUIRE_REAL_GPU=1` in a hardware runner to require the
+device instead of skipping when none is present.
+
 ## Example
 
 See [`examples/process.qui`](examples/process.qui).
