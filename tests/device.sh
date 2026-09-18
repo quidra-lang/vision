@@ -64,38 +64,84 @@ if ! grep -Fq "gpu(2147483647) is not available" "$TMP/transfer.err"; then
     exit 1
 fi
 
-cat > "$TMP/vision-no-fallback.qui" <<'QUI'
+cat > "$TMP/vision-gpu-compute.qui" <<'QUI'
 import vision
 
-tensor<uint8> pixels_gpu = tensor.ones<uint8>([1, 2, 2], gpu = 0)
-tensor<uint8> | error transformed = vision.flip_horizontal(pixels_gpu)
-match transformed
-    tensor<uint8> output
-        print(output.shape()[0])
+int | error run()
+    tensor<uint8> pixels = tensor.zeros<uint8>([1, 2, 3], gpu = 0)
+    pixels[0, 0, 0] = uint8(1)
+    pixels[0, 0, 1] = uint8(2)
+    pixels[0, 0, 2] = uint8(3)
+    pixels[0, 1, 0] = uint8(4)
+    pixels[0, 1, 1] = uint8(5)
+    pixels[0, 1, 2] = uint8(6)
+
+    tensor<uint8> cropped = try vision.crop(
+        pixels, top = 0, left = 1, height = 2, width = 2
+    )
+    tensor<uint8> resized = try vision.resize(pixels, height = 4, width = 6)
+    tensor<uint8> horizontal = try vision.flip_horizontal(pixels)
+    tensor<uint8> vertical = try vision.flip_vertical(pixels)
+    tensor<uint8> turned90 = try vision.rotate90(pixels)
+    tensor<uint8> turned180 = try vision.rotate180(pixels)
+    tensor<uint8> turned270 = try vision.rotate270(pixels)
+
+    print(cropped[0, 0, 0].item())
+    print(resized.shape()[1])
+    print(resized.shape()[2])
+    print(horizontal[0, 0, 0].item())
+    print(vertical[0, 0, 0].item())
+    print(turned90[0, 0, 0].item())
+    print(turned90[0, 2, 1].item())
+    print(turned180[0, 0, 0].item())
+    print(turned270[0, 0, 0].item())
+
+    tensor<uint8> rgb = tensor.ones<uint8>([3, 2, 2], gpu = 0)
+    tensor<uint8> gray = try vision.grayscale(rgb)
+    tensor<uint8> binary = try vision.threshold(pixels, cutoff = uint8(4))
+    print(gray[0, 0, 0].item())
+    print(binary[0, 0, 0].item())
+    print(binary[0, 1, 2].item())
+
+    tensor<uint8> impulse = tensor.zeros<uint8>([1, 3, 3], gpu = 0)
+    impulse[0, 1, 1] = uint8(255)
+    tensor<uint8> blurred = try vision.blur(impulse, radius = 1)
+    tensor<uint8> expanded = try vision.dilate(impulse, radius = 1)
+    tensor<uint8> contracted = try vision.erode(impulse, radius = 1)
+    tensor<int> kernel = tensor.zeros<int>([3, 3], gpu = 0)
+    kernel[1, 1] = 1
+    tensor<uint8> filtered = try vision.filter(impulse, kernel)
+    print(blurred[0, 1, 1].item())
+    print(expanded[0, 0, 0].item())
+    print(contracted[0, 1, 1].item())
+    print(filtered[0, 1, 1].item())
+    return 0
+
+auto result = run()
+match result
+    int
+        int ignored = result
     error problem
         print(problem)
 QUI
 
-set +e
-QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-no-fallback.qui" >"$TMP/vision.out" 2>"$TMP/vision.err"
-status=$?
-set -e
-if [[ $status -ne 101 ]]; then
-    echo "expected unsupported GPU Vision operation to fail with status 101, got $status" >&2
-    cat "$TMP/vision.out" >&2 || true
-    cat "$TMP/vision.err" >&2 || true
+vision_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-gpu-compute.qui")"
+vision_expected="$(printf '2\n4\n6\n3\n4\n4\n3\n6\n3\n1\n0\n255\n28\n255\n0\n255')"
+if [[ "$vision_output" != "$vision_expected" ]]; then
+    echo "unexpected GPU Vision output:" >&2
+    printf '%s\n' "$vision_output" >&2
     exit 1
 fi
-if ! grep -Fq "tensor.item is not supported on gpu(0)" "$TMP/vision.err"; then
-    echo "Vision GPU operation did not fail at the explicit unsupported boundary" >&2
-    cat "$TMP/vision.err" >&2
-    exit 1
-fi
-if [[ -s "$TMP/vision.out" ]]; then
-    echo "Vision unexpectedly produced a CPU result for a GPU input" >&2
-    cat "$TMP/vision.out" >&2
-    exit 1
-fi
+
+cat > "$TMP/filter-device-mismatch.qui" <<'QUI'
+import vision
+
+tensor<uint8> pixels = tensor.ones<uint8>([1, 2, 2], gpu = 0)
+tensor<int> kernel = tensor.ones<int>([1, 1])
+auto output = vision.filter(pixels, kernel)
+print(output)
+QUI
+expect_device_failure "$TMP/filter-device-mismatch.qui" "image filter tensors must be on the same device"
 
 cat > "$TMP/image-write-gpu.qui" <<'QUI'
 tensor<uint8> image_gpu = tensor.ones<uint8>([1, 1, 1], gpu = 0)
