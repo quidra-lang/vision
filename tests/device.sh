@@ -164,8 +164,12 @@ import vision
 
 tensor<uint8> pixels = tensor.ones<uint8>([1, 2, 2], gpu = 0)
 tensor<int> kernel = tensor.ones<int>([1, 1])
-auto output = vision.filter(pixels, kernel)
-print(output)
+tensor<uint8> | error output = vision.filter(pixels, kernel)
+match output
+    tensor<uint8> value
+        print(value.shape()[0])
+    error problem
+        print(problem)
 QUI
 expect_device_failure "$TMP/filter-device-mismatch.qui" "image filter tensors must be on the same device"
 
