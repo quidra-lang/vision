@@ -91,7 +91,7 @@ still requires an explicit `.cpu()`. The public Vision API is vendor-independent
 backend selection is an implementation detail of Quidra/Vision.
 
 The released package dependency remains tied only to released Quidra versions.
-During development, CI additionally builds the current Quidra `feature` branch
+During development, CI additionally builds the current Quidra `develop` branch
 and checks GPU placement and numerical contracts without changing
 `requires.quidra` to an unreleased branch. On real GPU hardware,
 `tests/real_gpu_integration.sh /path/to/quidra` compares CPU and GPU Vision
