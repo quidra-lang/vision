@@ -16,11 +16,18 @@ jobs:
         with:
           repository: quidra-lang/quidra
           ref: v0.2.0
-          path: quidra
+          path: quidra      - name: Restore Quidra compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-quidra-${{ hashFiles('quidra/CMakeLists.txt', 'quidra/src/**', 'quidra/include/**') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-quidra-
+
       - name: Install Quidra dependencies
-        run: sudo apt-get update && sudo apt-get install -y llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev
+        run: sudo apt-get update && sudo apt-get install -y ccache llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev
       - name: Build Quidra
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
       - name: Integration tests
         run: bash tests/integration.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
       - name: Boundary and property tests
@@ -40,11 +47,18 @@ jobs:
         with:
           repository: quidra-lang/quidra
           ref: develop
-          path: quidra
+          path: quidra      - name: Restore Quidra compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-quidra-${{ hashFiles('quidra/CMakeLists.txt', 'quidra/src/**', 'quidra/include/**') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-quidra-
+
       - name: Install Quidra dependencies
-        run: sudo apt-get update && sudo apt-get install -y llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev
+        run: sudo apt-get update && sudo apt-get install -y ccache llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev
       - name: Build Quidra develop
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DQUIDRA_ENABLE_TEST_GPU_BACKEND=ON && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DQUIDRA_ENABLE_TEST_GPU_BACKEND=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
       - name: Integration tests
         run: bash tests/integration.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
       - name: Boundary and property tests
@@ -68,11 +82,18 @@ jobs:
         with:
           repository: quidra-lang/quidra
           ref: develop
-          path: quidra
+          path: quidra      - name: Restore Quidra compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-quidra-${{ hashFiles('quidra/CMakeLists.txt', 'quidra/src/**', 'quidra/include/**') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-quidra-
+
       - name: Install Quidra dependencies
-        run: brew install curl libpng jpeg-turbo libtiff webp ffmpeg
+        run: brew install ccache curl libpng jpeg-turbo libtiff webp ffmpeg
       - name: Build Quidra develop
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix curl);$(brew --prefix libpng);$(brew --prefix jpeg-turbo);$(brew --prefix libtiff);$(brew --prefix webp);$(brew --prefix ffmpeg)" && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix curl);$(brew --prefix libpng);$(brew --prefix jpeg-turbo);$(brew --prefix libtiff);$(brew --prefix webp);$(brew --prefix ffmpeg)" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
       - name: Real Metal GPU numerical integration
         env:
           QUIDRA_REQUIRE_REAL_GPU: "1"

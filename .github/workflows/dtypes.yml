@@ -13,10 +13,17 @@ jobs:
         with:
           repository: quidra-lang/quidra
           ref: v0.3.0
-          path: quidra
+          path: quidra      - name: Restore Quidra compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-quidra-${{ hashFiles('quidra/CMakeLists.txt', 'quidra/src/**', 'quidra/include/**') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-quidra-
+
       - name: Install Quidra dependencies
-        run: sudo apt-get update && sudo apt-get install -y llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev
+        run: sudo apt-get update && sudo apt-get install -y ccache llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev
       - name: Build Quidra
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
       - name: Vision dtype tests
         run: bash tests/dtypes.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
