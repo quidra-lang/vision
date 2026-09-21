@@ -102,9 +102,9 @@ backend selection is an implementation detail of Quidra/Vision.
 The release workflow derives the required Core baseline tag from the
 `requires.quidra` lower bound in `quidra.package` and checks that the tag exists
 before building or tagging Vision.
-During development, CI additionally builds the current Quidra `develop` branch
-and checks GPU placement and numerical contracts without changing
-`requires.quidra` to an unreleased branch. On real GPU hardware,
+During development, CI builds the immutable released Quidra baseline declared
+by `requires.quidra` and checks GPU placement and numerical contracts. On real
+GPU hardware,
 `tests/real_gpu_integration.sh /path/to/quidra` compares CPU and GPU Vision
 results; set `QUIDRA_REQUIRE_REAL_GPU=1` in a hardware runner to require the
 device instead of skipping when none is present.
