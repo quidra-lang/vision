@@ -22,15 +22,19 @@ supports.
 ```sh
 git clone --depth 1 --branch vX.Y.Z https://github.com/quidra-lang/vision.git
 cd vision
-quidra install . --name vision
+quidra install .
 ```
 
 Quidra versions that provide the release-aware short package CLI can install the
 same immutable release directly:
 
 ```sh
-quidra install vision@X.Y.Z
+quidra install quidra-vision@X.Y.Z
 ```
+
+The package-manager identity is `quidra-vision`; the Quidra source import
+identifier remains `vision`. This distinction keeps installation names globally
+recognizable without making source imports longer.
 
 Then import it normally:
 
