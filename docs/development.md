@@ -31,8 +31,10 @@ procedure, execute the complete sequence:
 1. Fetch the latest remote `develop` and `main` HEADs. Never work from a remembered SHA.
 2. Confirm that all intended work is in `develop`.
 3. Choose the Semantic Versioning release number from the actual change.
-4. Update `quidra.package`: set the exact package version, the tested
-   `requires.quidra` range, and any `requires.<package>` ranges.
+4. Update `project.toml`: set the exact package version, the tested
+   `requires.quidra` range, and any `requires.<package>` ranges. Then run
+   `python3 scripts/sync_metadata.py` to regenerate `quidra.package`; never
+   hand-edit it.
 5. Ensure CI tests against an immutable released Quidra tag, never a Quidra
    development branch.
 6. Run/verify all tests and examples on `develop`. Fix failures there.
@@ -41,7 +43,8 @@ procedure, execute the complete sequence:
    the GitHub Release. Never tag `develop`.
 9. Verify the tag, GitHub Release, and `quidra.package` version all match.
 10. Return to `develop`, bring back any release-only change if needed, advance
-    `quidra.package` to the next intended development version, and push it.
+    `project.toml` to the next intended development version, regenerate
+    `quidra.package`, and push it.
 11. Continue ordinary work only on `develop`.
 
 Never force-move, delete/recreate, or reuse a published release tag.

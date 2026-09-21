@@ -1,8 +1,9 @@
-# vision
+# Quidra Vision
 
-`vision` is Quidra's first-party tensor image-processing package. It works
-directly on rank-3 CHW tensors; file I/O is provided by the standard `image`
-namespace, so there is no separate Image wrapper or conversion layer.
+Quidra Vision is Quidra's first-party tensor image-processing package, imported
+as `vision`. It works directly on rank-3 CHW tensors; file I/O is provided by
+the standard `image` namespace, so there is no separate Image wrapper or
+conversion layer.
 
 Geometry operations and morphology preserve the input tensor element type. Operations
 whose semantics are currently defined in the 8-bit image domain (`grayscale`,
@@ -15,10 +16,11 @@ kernels, and a zero filter divisor.
 
 ## Install
 
-Vision v0.1.0 requires Quidra `>=0.1.0 <0.2.0` and can be installed with:
+Install a released tag; `quidra.package` declares the Quidra range that tag
+supports.
 
 ```sh
-git clone --depth 1 --branch v0.1.0 https://github.com/quidra-lang/vision.git
+git clone --depth 1 --branch vX.Y.Z https://github.com/quidra-lang/vision.git
 cd vision
 quidra install . --name vision
 ```
@@ -27,7 +29,7 @@ Quidra versions that provide the release-aware short package CLI can install the
 same immutable release directly:
 
 ```sh
-quidra install vision@0.1.0
+quidra install vision@X.Y.Z
 ```
 
 Then import it normally:
@@ -93,8 +95,9 @@ result. Codec and filesystem APIs remain host operations, so writing a GPU tenso
 still requires an explicit `.cpu()`. The public Vision API is vendor-independent;
 backend selection is an implementation detail of Quidra/Vision.
 
-Vision v0.1.0 requires the Core v0.1.0 tag; the release workflow checks that
-baseline explicitly before building or tagging Vision.
+The release workflow derives the required Core baseline tag from the
+`requires.quidra` lower bound in `quidra.package` and checks that the tag exists
+before building or tagging Vision.
 During development, CI additionally builds the current Quidra `develop` branch
 and checks GPU placement and numerical contracts without changing
 `requires.quidra` to an unreleased branch. On real GPU hardware,

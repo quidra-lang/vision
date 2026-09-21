@@ -1,0 +1,18 @@
+# Quidra Vision package metadata - the single source of truth.
+#
+# Every value below is authored here exactly once. quidra.package is
+# generated from this file by scripts/sync_metadata.py; do not hand-edit it.
+#
+# Only the TOML subset described in scripts/toml_subset.py is accepted here,
+# because the Quidra compiler parses the same subset.
+
+[package]
+name = "quidra-vision"
+import = "vision"
+display_name = "Quidra Vision"
+version = "0.2.0"
+repository = "https://github.com/quidra-lang/vision"
+
+[requires]
+quidra = ">=0.1.0 <0.3.0"
+abi = 1

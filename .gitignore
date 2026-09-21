@@ -7,3 +7,4 @@ quidra.lock
 *.tiff
 *.webp
 quidra/
+__pycache__/
