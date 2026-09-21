@@ -1,0 +1,142 @@
+tensor<T> | error crop<T>(
+    tensor<T> pixels,
+    int top,
+    int left,
+    int height,
+    int width
+)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.crop requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.crop requires positive CHW dimensions")
+    if top < 0 or left < 0 or height <= 0 or width <= 0
+        return error("vision.crop requires nonnegative origin and positive size")
+    if top >= shape[1] or left >= shape[2]
+        return error("vision.crop origin is outside the image")
+    if height > shape[1] - top or width > shape[2] - left
+        return error("vision.crop rectangle exceeds the image")
+    return image.tensor_crop(pixels, top, left, height, width)
+
+tensor<T> | error resize<T>(tensor<T> pixels, int height, int width)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.resize requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.resize requires positive CHW dimensions")
+    if height <= 0 or width <= 0
+        return error("vision.resize requires positive output dimensions")
+    return image.tensor_resize(pixels, height, width)
+
+tensor<T> | error flip_horizontal<T>(tensor<T> pixels)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.flip_horizontal requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.flip_horizontal requires positive CHW dimensions")
+    return image.tensor_flip_horizontal(pixels)
+
+tensor<T> | error flip_vertical<T>(tensor<T> pixels)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.flip_vertical requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.flip_vertical requires positive CHW dimensions")
+    return image.tensor_flip_vertical(pixels)
+
+tensor<T> | error rotate90<T>(tensor<T> pixels)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.rotate90 requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.rotate90 requires positive CHW dimensions")
+    return image.tensor_rotate90(pixels)
+
+tensor<T> | error rotate180<T>(tensor<T> pixels)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.rotate180 requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.rotate180 requires positive CHW dimensions")
+    return image.tensor_rotate180(pixels)
+
+tensor<T> | error rotate270<T>(tensor<T> pixels)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.rotate270 requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.rotate270 requires positive CHW dimensions")
+    return image.tensor_rotate270(pixels)
+
+tensor<uint8> | error grayscale(tensor<uint8> pixels)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.grayscale requires a rank-3 CHW tensor")
+    if shape[1] <= 0 or shape[2] <= 0
+        return error("vision.grayscale requires positive spatial dimensions")
+    if shape[0] != 1 and shape[0] != 3 and shape[0] != 4
+        return error("vision.grayscale requires 1, 3, or 4 channels")
+    return image.tensor_grayscale(pixels)
+
+tensor<uint8> | error threshold(
+    tensor<uint8> pixels,
+    uint8 cutoff,
+    uint8 low = uint8(0),
+    uint8 high = uint8(255)
+)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.threshold requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.threshold requires positive CHW dimensions")
+    return image.tensor_threshold(pixels, cutoff, low, high)
+
+tensor<uint8> | error blur(tensor<uint8> pixels, int radius = 1)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.blur requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.blur requires positive CHW dimensions")
+    if radius < 0
+        return error("vision.blur radius must be nonnegative")
+    return image.tensor_blur(pixels, radius)
+
+tensor<uint8> | error filter(
+    tensor<uint8> pixels,
+    tensor<int> kernel,
+    int divisor = 1,
+    int offset = 0
+)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.filter requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.filter requires positive CHW dimensions")
+    if divisor == 0
+        return error("vision.filter divisor must not be zero")
+    int[] kernel_shape = kernel.shape()
+    if len(kernel_shape) != 2
+        return error("vision.filter requires a rank-2 kernel")
+    if kernel_shape[0] <= 0 or kernel_shape[1] <= 0
+        return error("vision.filter requires positive kernel dimensions")
+    return image.tensor_filter(pixels, kernel, divisor, offset)
+
+tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.dilate requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.dilate requires positive CHW dimensions")
+    if radius < 0
+        return error("vision.dilate radius must be nonnegative")
+    return image.tensor_dilate(pixels, radius)
+
+tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.erode requires a rank-3 CHW tensor")
+    if shape[0] <= 0 or shape[1] <= 0 or shape[2] <= 0
+        return error("vision.erode requires positive CHW dimensions")
+    if radius < 0
+        return error("vision.erode radius must be nonnegative")
+    return image.tensor_erode(pixels, radius)

@@ -1,0 +1,9 @@
+quidra.lock
+.DS_Store
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.webp
+quidra/
