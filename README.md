@@ -1,13 +1,11 @@
 # Quidra Vision
 
 Quidra Vision is Quidra's first-party tensor image-processing package, imported
-as `vision`. It works directly on rank-3 CHW tensors; file I/O is provided by
-the standard `image` namespace, so there is no separate Image wrapper or
-conversion layer.
+as `vision`. It works directly on tensors with rank >= 3 and trailing
+`(..., C, H, W)` dimensions; file I/O is provided by the standard `image`
+namespace, so there is no separate Image wrapper or conversion layer.
 
-Geometry operations and morphology preserve the input tensor element type. Operations
-whose semantics are currently defined in the 8-bit image domain (`grayscale`,
-`threshold`, `blur`, and `filter`) explicitly use `tensor<uint8>`.
+Geometry operations and morphology preserve the input tensor element type. `grayscale`, `blur`, and `filter` use one public name across the `tensor<uint8>` image path and differentiable floating paths; Quidra's generic specialization resolves the dtype-specific implementation statically. `threshold` uses the same public name across the `tensor<uint8>` and floating paths. Because thresholding is discontinuous, tracked floating input is rejected rather than implicitly detached; untracked floating input is processed normally without creating an autograd graph.
 
 Invalid shapes or parameters are returned as `error`; they are never silently
 reinterpreted. This includes zero-size resize targets, out-of-bounds crops,
@@ -53,12 +51,14 @@ import vision
 | `rotate90` | `rotate90<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `rotate180` | `rotate180<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `rotate270` | `rotate270<T>(tensor<T> pixels) -> tensor<T> \| error` |
-| `grayscale` | `grayscale(tensor<uint8> pixels) -> tensor<uint8> \| error` |
-| `threshold` | `threshold(tensor<uint8> pixels, uint8 cutoff, uint8 low = uint8(0), uint8 high = uint8(255)) -> tensor<uint8> \| error` |
-| `blur` | `blur(tensor<uint8> pixels, int radius = 1) -> tensor<uint8> \| error` |
-| `filter` | `filter(tensor<uint8> pixels, tensor<int> kernel, int divisor = 1, int offset = 0) -> tensor<uint8> \| error` |
+| `grayscale` | `grayscale(tensor<uint8> pixels) -> tensor<uint8> \| error`; `grayscale<T: floating>(tensor<T> pixels) -> tensor<T> \| error` |
+| `threshold` | `threshold(tensor<uint8> pixels, uint8 cutoff, uint8 low = uint8(0), uint8 high = uint8(255)) -> tensor<uint8> \| error`; `threshold<T: floating>(tensor<T> pixels, T cutoff, T low = 0.0, T high = 1.0) -> tensor<T> \| error` |
+| `blur` | `blur(tensor<uint8> pixels, int radius = 1) -> tensor<uint8> \| error`; `blur<T: floating>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
+| `filter` | `filter(tensor<uint8> pixels, tensor<int> kernel, int divisor = 1, int offset = 0) -> tensor<uint8> \| error`; `filter<T: floating, K: floating>(tensor<T> pixels, tensor<K> kernel, K divisor = 1.0, K offset = 0.0) -> tensor<T> \| error` |
 | `dilate` | `dilate<T>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
 | `erode` | `erode<T>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
+
+`crop`, `resize`, flips, and rotations accept tensors with rank >= 3 and interpret the trailing dimensions as `(..., C, H, W)`, preserving every leading dimension. Floating tracked tensors remain tracked through these geometry operations and participate in autograd. Floating grayscale, blur/filter, and morphology paths are compositions of Core tensor primitives, so their graphs remain differentiable through `backward(track = true)` for higher-order derivatives as well as ordinary first-order backward. Thresholding never detaches implicitly and rejects tracked floating input.
 
 `resize` uses nearest-neighbor sampling. `rotate90` turns clockwise and
 `rotate270` turns counter-clockwise; both exchange height and width. `rotate180`
@@ -101,9 +101,9 @@ backend selection is an implementation detail of Quidra/Vision.
 
 The release workflow derives the required Core baseline tag from the
 `requires.quidra` lower bound in `quidra.package` and checks that the tag exists
-before building or tagging Vision.
-During development, CI builds the immutable released Quidra baseline declared
-by `requires.quidra` and checks GPU placement and numerical contracts. On real
+before building or tagging Vision. During development, CI instead builds the
+current Quidra `develop` branch to catch forward-compatibility regressions
+without changing the package's released `requires.quidra` contract. On real
 GPU hardware,
 `tests/real_gpu_integration.sh /path/to/quidra` compares CPU and GPU Vision
 results; set `QUIDRA_REQUIRE_REAL_GPU=1` in a hardware runner to require the

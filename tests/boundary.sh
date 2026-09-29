@@ -136,7 +136,7 @@ int | error run()
     print(differences)
     return 0
 
-auto result = run()
+auto | error result = run()
 match result
     int
         int ignored = result

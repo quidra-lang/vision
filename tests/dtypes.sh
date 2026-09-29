@@ -56,7 +56,7 @@ int | error run()
     print(bright_eroded[0, 0, 1].item())
     return 0
 
-auto result = run()
+auto | error result = run()
 match result
     int
         int ignored = result

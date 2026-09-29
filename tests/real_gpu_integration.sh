@@ -121,9 +121,19 @@ int | error run()
     tensor<float32> cpu_float_flip = try vision.flip_vertical(cpu_float)
     tensor<float32> gpu_float_flip = (try vision.flip_vertical(gpu_float)).cpu()
     print(cpu_float_flip[0, 1, 2].item() == gpu_float_flip[0, 1, 2].item())
+
+    tensor<float32> cpu_float_blur = try vision.blur(cpu_float, radius = 1)
+    tensor<float32> gpu_float_blur_source = gpu_float.track()
+    tensor<float32> gpu_float_blur_tracked = try vision.blur(
+        gpu_float_blur_source, radius = 1
+    )
+    tensor<float32> gpu_float_blur = gpu_float_blur_tracked.untrack().cpu()
+    print(cpu_float_blur[0, 1, 2].item() == gpu_float_blur[0, 1, 2].item())
+    gpu_float_blur_tracked.mean().backward(&gpu_float_blur_source)
+    print(gpu_float_blur_source.has_grad())
     return 0
 
-auto result = run()
+auto | error result = run()
 match result
     int
         int ignored = result
@@ -132,7 +142,7 @@ match result
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-real-gpu.qui")"
-expected="$(printf 'true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue')"
+expected="$(printf 'true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue')"
 if [[ "$output" != "$expected" ]]; then
     echo "Vision real GPU numerical equivalence failed on gpu($GPU_INDEX)" >&2
     printf '%s\n' "$output" >&2

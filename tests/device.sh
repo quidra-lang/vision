@@ -149,7 +149,7 @@ int | error run()
     print(filtered[0, 1, 1].item())
     return 0
 
-auto result = run()
+auto | error result = run()
 match result
     int
         int ignored = result
@@ -177,11 +177,11 @@ match output
     error problem
         print(problem)
 QUI
-expect_device_failure "$TMP/filter-device-mismatch.qui" "image filter tensors must be on the same device"
+expect_device_failure "$TMP/filter-device-mismatch.qui" "tensor.convolve input and kernel are on different devices; transfer them explicitly"
 
 cat > "$TMP/image-write-gpu.qui" <<'QUI'
 tensor<uint8> image_gpu = tensor.ones<uint8>([1, 1, 1], gpu = 0)
-auto written = image.write("should-not-exist.png", image_gpu)
+auto | error written = image.write("should-not-exist.png", image_gpu)
 match written
     void
         print("unexpected success")
