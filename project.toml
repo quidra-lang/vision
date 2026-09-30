@@ -1,18 +1,31 @@
 # Quidra Vision package metadata - the single source of truth.
 #
-# Every value below is authored here exactly once. quidra.package is
-# generated from this file by scripts/sync_metadata.py; do not hand-edit it.
-#
-# Only the TOML subset described in scripts/toml_subset.py is accepted here,
-# because the Quidra compiler parses the same subset.
+# Every value below is authored here exactly once. quidra.package is generated
+# from this file by Core's `quidra package sync`; do not hand-edit it. Core's
+# package parser is the single implementation of the accepted metadata subset.
 
 [package]
 name = "quidra-vision"
 import = "vision"
 display_name = "Quidra Vision"
-version = "0.4.0"
+version = "0.5.0"
 repository = "https://github.com/quidra-lang/vision"
 
 [requires]
-quidra = ">=0.4.0 <0.5.0"
+quidra = ">=0.5.0 <0.6.0"
 abi = 1
+math = ">=0.5.0 <0.6.0"
+
+# Package-owned CPU implementation. Core only provides the generic native
+# extension ABI/build mechanism; Vision owns this kernel.
+[native.source]
+cpu = "native/vision_native.cpp"
+codecs = "native/image_codec.cpp"
+
+# Codec dependencies stay Vision-owned. Core only resolves generic package-native
+# dependency metadata through pkg-config.
+[native.pkg]
+png = "libpng"
+jpeg = "libjpeg"
+tiff = "libtiff-4"
+webp = "libwebp"

@@ -3,7 +3,7 @@ set -euo pipefail
 
 QUIDRA="$1"
 REPOSITORY_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PACKAGE_ROOT="$(dirname "$REPOSITORY_ROOT")"
+PACKAGE_ROOT="$(dirname "$REPOSITORY_ROOT"):$REPOSITORY_ROOT"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -19,7 +19,9 @@ int | error compile_device_surface()
     tensor<uint8> roundtrip = transferred.cpu()
     tensor<uint8> transformed = try vision.flip_horizontal(direct)
     print(roundtrip.shape()[0])
+    print(NL)
     print(transformed.shape()[0])
+    print(NL)
     return 0
 QUI
 
@@ -28,6 +30,7 @@ QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" check "$TMP/device-check.qui" >/de
 cat > "$TMP/no-fallback-create.qui" <<'QUI'
 tensor<uint8> value = tensor.zeros<uint8>([1, 1, 1], gpu = 2147483647)
 print(value.shape()[0])
+print(NL)
 QUI
 
 set +e
@@ -48,6 +51,7 @@ cat > "$TMP/no-fallback-transfer.qui" <<'QUI'
 tensor<uint8> cpu = tensor.ones<uint8>([1, 1, 1])
 tensor<uint8> value = cpu.gpu(2147483647)
 print(value.shape()[0])
+print(NL)
 QUI
 
 set +e
@@ -113,21 +117,33 @@ int | error run()
     tensor<uint8> turned270 = try vision.rotate270(pixels)
 
     print(cropped[0, 0, 0].item())
+    print(NL)
     print(resized.shape()[1])
+    print(NL)
     print(resized.shape()[2])
+    print(NL)
     print(horizontal[0, 0, 0].item())
+    print(NL)
     print(vertical[0, 0, 0].item())
+    print(NL)
     print(turned90[0, 0, 0].item())
+    print(NL)
     print(turned90[0, 2, 1].item())
+    print(NL)
     print(turned180[0, 0, 0].item())
+    print(NL)
     print(turned270[0, 0, 0].item())
+    print(NL)
 
     tensor<uint8> rgb = tensor.ones<uint8>([3, 2, 2], gpu = 0)
     tensor<uint8> gray = try vision.grayscale(rgb)
     tensor<uint8> binary = try vision.threshold(pixels, cutoff = uint8(4))
     print(gray[0, 0, 0].item())
+    print(NL)
     print(binary[0, 0, 0].item())
+    print(NL)
     print(binary[0, 1, 2].item())
+    print(NL)
 
     tensor<uint8> impulse = tensor.zeros<uint8>([1, 3, 3], gpu = 0)
     impulse[0, 1, 1] = uint8(255)
@@ -141,12 +157,19 @@ int | error run()
     kernel[1, 1] = 1
     tensor<uint8> filtered = try vision.filter(impulse, kernel)
     print(blurred[0, 1, 1].item())
+    print(NL)
     print(expanded[0, 0, 0].item())
+    print(NL)
     print(contracted[0, 1, 1].item())
+    print(NL)
     print(huge_blurred[0, 1, 1].item())
+    print(NL)
     print(huge_expanded[0, 0, 0].item())
+    print(NL)
     print(huge_contracted[0, 1, 1].item())
+    print(NL)
     print(filtered[0, 1, 1].item())
+    print(NL)
     return 0
 
 auto | error result = run()
@@ -155,6 +178,7 @@ match result
         int ignored = result
     error problem
         print(problem)
+        print(NL)
 QUI
 
 vision_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-gpu-compute.qui")"
@@ -174,28 +198,34 @@ tensor<uint8> | error output = vision.filter(pixels, kernel)
 match output
     tensor<uint8> value
         print(value.shape()[0])
+        print(NL)
     error problem
         print(problem)
+        print(NL)
 QUI
-expect_device_failure "$TMP/filter-device-mismatch.qui" "tensor.convolve input and kernel are on different devices; transfer them explicitly"
+expect_device_failure "$TMP/filter-device-mismatch.qui" "tensor operands are on different devices"
 
 cat > "$TMP/image-write-gpu.qui" <<'QUI'
+import vision
+
 tensor<uint8> image_gpu = tensor.ones<uint8>([1, 1, 1], gpu = 0)
-auto | error written = image.write("should-not-exist.png", image_gpu)
+auto | error written = vision.write("should-not-exist.png", image_gpu)
 match written
     void
         print("unexpected success")
+        print(NL)
     error problem
         print(problem)
+        print(NL)
 QUI
 
-write_output="$(cd "$TMP" && "$QUIDRA" run "$TMP/image-write-gpu.qui")"
-if [[ "$write_output" != "image.write is not supported on gpu(0)" ]]; then
-    echo "unexpected GPU image.write result: $write_output" >&2
+write_output="$(cd "$TMP" && QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" run "$TMP/image-write-gpu.qui")"
+if [[ "$write_output" != "vision.write failed; image codecs require a CPU tensor and a supported file extension" ]]; then
+    echo "unexpected GPU vision.write result: $write_output" >&2
     exit 1
 fi
 if [[ -e "$TMP/should-not-exist.png" ]]; then
-    echo "GPU image.write unexpectedly wrote a CPU-fallback file" >&2
+    echo "GPU vision.write unexpectedly wrote a CPU-fallback file" >&2
     exit 1
 fi
 

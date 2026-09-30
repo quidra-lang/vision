@@ -3,7 +3,7 @@ set -euo pipefail
 
 QUIDRA="$1"
 REPOSITORY_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PACKAGE_ROOT="$(dirname "$REPOSITORY_ROOT")"
+PACKAGE_ROOT="$(dirname "$REPOSITORY_ROOT"):$REPOSITORY_ROOT"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -18,7 +18,9 @@ int | error run()
     rgb[2, 0, 1] = uint8(255)
     tensor<uint8> gray = try vision.grayscale(rgb)
     print(gray[0, 0, 0].item())
+    print(NL)
     print(gray[0, 0, 1].item())
+    print(NL)
 
     // Geometry only relocates samples, so it must preserve the source dtype.
     tensor<uint16> pixels = tensor.zeros<uint16>([1, 2, 2])
@@ -33,9 +35,13 @@ int | error run()
     tensor<uint16> turned = try vision.rotate90(pixels)
 
     print(cropped[0, 1, 0].item())
+    print(NL)
     print(resized[0, 3, 3].item())
+    print(NL)
     print(flipped[0, 0, 0].item())
+    print(NL)
     print(turned[0, 0, 1].item())
+    print(NL)
 
     // Morphology must not retain uint8-specific sentinels such as 0 or 255.
     tensor<int16> signed_pixels = tensor.zeros<int16>([1, 1, 3])
@@ -45,7 +51,9 @@ int | error run()
     tensor<int16> signed_dilated = try vision.dilate(signed_pixels, radius = 1)
     tensor<int16> signed_eroded = try vision.erode(signed_pixels, radius = 1)
     print(signed_dilated[0, 0, 0].item())
+    print(NL)
     print(signed_eroded[0, 0, 1].item())
+    print(NL)
 
     tensor<uint16> bright = tensor.zeros<uint16>([1, 1, 2])
     bright[0, 0, 0] = uint16(1000)
@@ -53,7 +61,9 @@ int | error run()
     tensor<uint16> bright_dilated = try vision.dilate(bright, radius = 1)
     tensor<uint16> bright_eroded = try vision.erode(bright, radius = 1)
     print(bright_dilated[0, 0, 0].item())
+    print(NL)
     print(bright_eroded[0, 0, 1].item())
+    print(NL)
     return 0
 
 auto | error result = run()
@@ -62,6 +72,7 @@ match result
         int ignored = result
     error problem
         print(problem)
+        print(NL)
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-dtypes.qui")"

@@ -3,7 +3,7 @@ set -euo pipefail
 
 QUIDRA="$1"
 REPOSITORY_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PACKAGE_ROOT="$(dirname "$REPOSITORY_ROOT")"
+PACKAGE_ROOT="$(dirname "$REPOSITORY_ROOT"):$REPOSITORY_ROOT"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -20,6 +20,7 @@ match bad_resize
     error
         resize_rejected = true
 print(resize_rejected)
+print(NL)
 
 bool crop_rejected = false
 tensor<uint8> | error bad_crop = vision.crop(pixels, top = 1, left = 2, height = 2, width = 2)
@@ -29,6 +30,7 @@ match bad_crop
     error
         crop_rejected = true
 print(crop_rejected)
+print(NL)
 
 bool grayscale_rejected = false
 tensor<uint8> two_channels = tensor.zeros<uint8>([2, 2, 2])
@@ -39,6 +41,7 @@ match bad_grayscale
     error
         grayscale_rejected = true
 print(grayscale_rejected)
+print(NL)
 
 bool blur_rejected = false
 tensor<uint8> | error bad_blur = vision.blur(pixels, radius = -1)
@@ -48,6 +51,7 @@ match bad_blur
     error
         blur_rejected = true
 print(blur_rejected)
+print(NL)
 
 bool filter_rejected = false
 tensor<int> kernel = tensor.ones<int>([3, 3])
@@ -58,6 +62,7 @@ match bad_filter
     error
         filter_rejected = true
 print(filter_rejected)
+print(NL)
 
 bool dilate_rejected = false
 tensor<uint8> | error bad_dilate = vision.dilate(pixels, radius = -1)
@@ -67,6 +72,7 @@ match bad_dilate
     error
         dilate_rejected = true
 print(dilate_rejected)
+print(NL)
 
 bool erode_rejected = false
 tensor<uint8> | error bad_erode = vision.erode(pixels, radius = -1)
@@ -76,6 +82,7 @@ match bad_erode
     error
         erode_rejected = true
 print(erode_rejected)
+print(NL)
 
 bool rank_rejected = false
 tensor<uint8> rank_two = tensor.zeros<uint8>([2, 3])
@@ -86,6 +93,7 @@ match bad_flip
     error
         rank_rejected = true
 print(rank_rejected)
+print(NL)
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/boundary.qui")"
@@ -134,6 +142,7 @@ int | error run()
             if full_crop[0, y, x].item() != expected
                 differences += 1
     print(differences)
+    print(NL)
     return 0
 
 auto | error result = run()
@@ -142,6 +151,7 @@ match result
         int ignored = result
     error problem
         print(problem)
+        print(NL)
 QUI
 
 properties_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/properties.qui")"

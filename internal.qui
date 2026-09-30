@@ -1,0 +1,101 @@
+tensor<T> convolve2d<T: numeric>(
+    tensor<T> pixels,
+    tensor<T> kernel,
+    int padding
+)
+    int[] shape = pixels.shape()
+    int height_axis = len(shape) - 2
+    int width_axis = len(shape) - 1
+    int height = shape[height_axis]
+    int width = shape[width_axis]
+    int[] kernel_shape = kernel.shape()
+    int kernel_height = kernel_shape[0]
+    int kernel_width = kernel_shape[1]
+
+    int planes = 1
+    for axis in range(height_axis)
+        planes = planes * shape[axis]
+
+    int padded_height = height + padding * 2
+    int padded_width = width + padding * 2
+    int[] padded_shape = shape
+    padded_shape[height_axis] = padded_height
+    padded_shape[width_axis] = padded_width
+
+    int input_count = planes * height * width
+    int[] padded_indices = array(input_count, fill = 0)
+    for flat_index in range(input_count)
+        int x = flat_index % width
+        int remaining = flat_index / width
+        int y = remaining % height
+        int plane = remaining / height
+        padded_indices[flat_index] = (
+            (plane * padded_height + padding + y) * padded_width
+            + padding + x
+        )
+
+    // Core supplies only tensor/autograd substrate. Vision owns the image-domain
+    // patch mapping and the convolution contraction itself.
+    tensor<T> padded = pixels.scatter(padded_indices, padded_shape)
+
+    int output_height = padded_height - kernel_height + 1
+    int output_width = padded_width - kernel_width + 1
+    int kernel_count = kernel_height * kernel_width
+    int patch_rows = planes * output_height * output_width
+    int patch_count = patch_rows * kernel_count
+    int[] patch_indices = array(patch_count, fill = 0)
+
+    for flat_index in range(patch_count)
+        int patch_column = flat_index % kernel_count
+        int patch_row = flat_index / kernel_count
+
+        int kernel_x = patch_column % kernel_width
+        int kernel_y = patch_column / kernel_width
+        int source_kernel_x = kernel_width - 1 - kernel_x
+        int source_kernel_y = kernel_height - 1 - kernel_y
+
+        int output_x = patch_row % output_width
+        int output_remaining = patch_row / output_width
+        int output_y = output_remaining % output_height
+        int plane = output_remaining / output_height
+
+        int source_y = output_y + source_kernel_y
+        int source_x = output_x + source_kernel_x
+        patch_indices[flat_index] = (
+            (plane * padded_height + source_y) * padded_width + source_x
+        )
+
+    tensor<T> patches = padded.gather(
+        patch_indices, [patch_rows, kernel_count]
+    )
+    tensor<T> flat_kernel = kernel.reshape([kernel_count])
+
+    // Contract each patch row with the kernel using only domain-neutral tensor
+    // primitives. This keeps Vision independent of Core linear algebra while
+    // preserving the differentiable graph for floating-point tensors.
+    int[] first_patch_indices = array(patch_rows, fill = 0)
+    int[] first_kernel_indices = array(patch_rows, fill = 0)
+    for patch_row in range(patch_rows)
+        first_patch_indices[patch_row] = patch_row * kernel_count
+    tensor<T> result = (
+        patches.gather(first_patch_indices, [patch_rows])
+        * flat_kernel.gather(first_kernel_indices, [patch_rows])
+    )
+
+    for remaining_column in range(kernel_count - 1)
+        int patch_column = remaining_column + 1
+        int[] column_patch_indices = array(patch_rows, fill = 0)
+        int[] column_kernel_indices = array(patch_rows, fill = patch_column)
+        for patch_row in range(patch_rows)
+            column_patch_indices[patch_row] = (
+                patch_row * kernel_count + patch_column
+            )
+        result = result + (
+            patches.gather(column_patch_indices, [patch_rows])
+            * flat_kernel.gather(column_kernel_indices, [patch_rows])
+        )
+
+    int[] output_shape = shape
+    output_shape[height_axis] = output_height
+    output_shape[width_axis] = output_width
+    return result.reshape(output_shape)

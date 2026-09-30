@@ -10,13 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check generated metadata
-        run: python3 scripts/sync_metadata.py --check
       - uses: actions/checkout@v4
         with:
           repository: quidra-lang/quidra
           ref: develop
           path: quidra
+      - uses: actions/checkout@v4
+        with:
+          repository: quidra-lang/math
+          ref: develop
+          path: math
+      - name: Enforce synchronized first-party versions
+        run: |
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          versions = {
+              "vision": tomllib.loads(Path("project.toml").read_text())["package"]["version"],
+              "quidra": tomllib.loads(Path("quidra/project.toml").read_text())["project"]["version"],
+              "math": tomllib.loads(Path("math/project.toml").read_text())["package"]["version"],
+          }
+          if len(set(versions.values())) != 1:
+              raise SystemExit(f"first-party versions must match: {versions}")
+          PY
+      - name: Enforce Core native ABI boundary
+        run: python3 quidra/tests/package_native_boundary_tests.py .
       - name: Restore Quidra compiler cache
         uses: actions/cache@v4
         with:
@@ -25,12 +43,24 @@ jobs:
           restore-keys: |
             ccache-${{ runner.os }}-quidra-
 
-      - name: Install Quidra dependencies
-        run: sudo apt-get update && sudo apt-get install -y ccache clang llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev
+      - name: Install Quidra toolchain dependencies
+        run: sudo apt-get update && sudo apt-get install -y ccache clang llvm libcurl4-openssl-dev
+      - name: Install Vision native dependencies
+        run: bash scripts/install-linux-native-deps.sh
       - name: Build Quidra develop
         run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DQUIDRA_ENABLE_TEST_GPU_BACKEND=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
+      - name: Validate package metadata with Core
+        run: quidra/build/quidra package validate "$GITHUB_WORKSPACE"
+      - name: Install package through the package manager
+        env:
+          HOME: ${{ runner.temp }}/quidra-home
+        run: |
+          quidra/build/quidra install "$GITHUB_WORKSPACE/math"
+          quidra/build/quidra install "$GITHUB_WORKSPACE"
       - name: Integration tests
         run: bash tests/integration.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
+      - name: Vision AOT package-native contract
+        run: bash tests/aot.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
       - name: Develop autograd contracts
         run: bash tests/develop_autograd.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
       - name: Boundary and property tests
@@ -41,7 +71,7 @@ jobs:
         run: bash tests/real_gpu_integration.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
       - name: Check example
         env:
-          QUIDRA_PACKAGE_PATH: ${{ github.workspace }}/..
+          QUIDRA_PACKAGE_PATH: ${{ github.workspace }}/..:${{ github.workspace }}
         run: quidra/build/quidra check examples/process.qui
 
 
@@ -55,6 +85,11 @@ jobs:
           repository: quidra-lang/quidra
           ref: develop
           path: quidra
+      - uses: actions/checkout@v4
+        with:
+          repository: quidra-lang/math
+          ref: develop
+          path: math
       - name: Restore Quidra compiler cache
         uses: actions/cache@v4
         with:
@@ -64,9 +99,9 @@ jobs:
             ccache-${{ runner.os }}-quidra-
 
       - name: Install Quidra dependencies
-        run: brew install ccache curl libpng jpeg-turbo libtiff webp ffmpeg
+        run: brew install ccache curl pkg-config libpng jpeg-turbo libtiff webp
       - name: Build Quidra develop
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix curl);$(brew --prefix libpng);$(brew --prefix jpeg-turbo);$(brew --prefix libtiff);$(brew --prefix webp);$(brew --prefix ffmpeg)" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix curl);$(brew --prefix libpng);$(brew --prefix jpeg-turbo);$(brew --prefix libtiff);$(brew --prefix webp);$(brew --prefix)" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
       - name: Real Metal GPU numerical integration
         env:
           QUIDRA_REQUIRE_REAL_GPU: "1"

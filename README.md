@@ -2,8 +2,8 @@
 
 Quidra Vision is Quidra's first-party tensor image-processing package, imported
 as `vision`. It works directly on tensors with rank >= 3 and trailing
-`(..., C, H, W)` dimensions; file I/O is provided by the standard `image`
-namespace, so there is no separate Image wrapper or conversion layer.
+`(..., C, H, W)` dimensions. Image file I/O is owned by Vision itself through
+`vision.read` / `vision.write`; Core has no image codec or image namespace.
 
 Geometry operations and morphology preserve the input tensor element type. `grayscale`, `blur`, and `filter` use one public name across the `tensor<uint8>` image path and differentiable floating paths; Quidra's generic specialization resolves the dtype-specific implementation statically. `threshold` uses the same public name across the `tensor<uint8>` and floating paths. Because thresholding is discontinuous, tracked floating input is rejected rather than implicitly detached; untracked floating input is processed normally without creating an autograd graph.
 
@@ -44,6 +44,8 @@ import vision
 
 | Operation | Signature |
 | --- | --- |
+| `read` | `read<T: numeric>(string path, int channels = 0) -> tensor<T> \| error` |
+| `write` | `write<T: numeric>(string path, tensor<T> pixels, int quality = 90) -> void \| error` |
 | `crop` | `crop<T>(tensor<T> pixels, int top, int left, int height, int width) -> tensor<T> \| error` |
 | `resize` | `resize<T>(tensor<T> pixels, int height, int width) -> tensor<T> \| error` |
 | `flip_horizontal` | `flip_horizontal<T>(tensor<T> pixels) -> tensor<T> \| error` |
@@ -81,30 +83,35 @@ and `crop` requires the requested rectangle to lie inside the image.
 
 ## Device placement
 
-Vision uses Quidra's tensor placement semantics directly. Image decoding through
-the standard `image.read` API produces a CPU tensor by default. Moving image
+Vision uses Quidra's tensor placement semantics directly. Image decoding through `vision.read<T>` produces a CPU tensor by default. Moving image
 data to a GPU is always an explicit caller action:
 
 ```quidra
-tensor<uint8> image_cpu = try image.read("input.png")
+tensor<uint8> image_cpu = vision.read<uint8>("input.png")
 tensor<uint8> image_gpu = image_cpu.gpu(0)
 ```
 
 Vision never moves an input to CPU or GPU implicitly. Tensor geometry
 (`crop`, `resize`, flips and rotations), grayscale/threshold, blur/filter, and
-morphology execute through Quidra's device kernels and keep GPU results on the
-same GPU. If a backend/element-type combination is unavailable, the operation fails
+morphology preserve the caller's device. Portable and differentiable paths use
+Core's generic tensor/autograd primitives; Vision may replace domain operations
+with package-owned native kernels when the device/layout contract matches. The
+current untracked contiguous CPU `uint8` filter path uses
+`native/vision_native.cpp` through Core's opaque native-extension ABI. If a backend/element-type combination is unavailable, the operation fails
 explicitly rather than iterating over hidden CPU storage or returning a CPU
 result. Codec and filesystem APIs remain host operations, so writing a GPU tensor
-still requires an explicit `.cpu()`. The public Vision API is vendor-independent;
+still requires an explicit `.cpu()`. `vision.write` also requires contiguous
+storage and returns an error instead of materializing a hidden copy. The public Vision API is vendor-independent;
 backend selection is an implementation detail of Quidra/Vision.
 
-The release workflow derives the required Core baseline tag from the
-`requires.quidra` lower bound in `quidra.package` and checks that the tag exists
-before building or tagging Vision. During development, CI instead builds the
-current Quidra `develop` branch to catch forward-compatibility regressions
-without changing the package's released `requires.quidra` contract. On real
-GPU hardware,
+Vision uses the same `MAJOR.MINOR.PATCH` version as Core and Math. The release
+workflow requires immutable Core and Math tags with exactly the Vision package
+version, checks that both tags exist, and validates Vision against those exact
+dependencies before tagging. The declared dependency ranges must admit that
+shared version. During development, CI instead builds the current
+Core and Math `develop` branches to catch forward-compatibility regressions
+without changing the package's released dependency contracts. On real GPU
+hardware,
 `tests/real_gpu_integration.sh /path/to/quidra` compares CPU and GPU Vision
 results; set `QUIDRA_REQUIRE_REAL_GPU=1` in a hardware runner to require the
 device instead of skipping when none is present.
@@ -120,3 +127,13 @@ See [`docs/development.md`](docs/development.md) for the canonical main/develop 
 ## License
 
 MIT
+
+
+## Ownership boundary
+
+Vision owns image-domain semantics end to end: transforms, codecs, native C/C++
+implementations, and codec-library integration. The codec implementation lives in
+`native/image_codec.cpp` and talks to tensors only through
+`<quidra/native_extension.h>`. Core does not provide image primitives, codec
+wrappers, or image-specific linker policy. The package manifest declares libpng,
+libjpeg, libtiff, and libwebp through the generic `native.pkg.*` mechanism.

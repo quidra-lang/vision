@@ -39,8 +39,13 @@ jobs:
           repository: quidra-lang/quidra
           ref: develop
           path: quidra
+      - uses: actions/checkout@v4
+        with:
+          repository: quidra-lang/math
+          ref: develop
+          path: math
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev ffmpeg libavformat-dev libavcodec-dev libavutil-dev libswscale-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang llvm pkg-config libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev
       - name: Build Quidra
         run: cmake -S quidra -B quidra/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQUIDRA_WARNINGS_AS_ERRORS=ON && cmake --build quidra/build --parallel
       - name: Require NVIDIA hardware and run Vision numerical integration
@@ -63,8 +68,13 @@ jobs:
           repository: quidra-lang/quidra
           ref: develop
           path: quidra
+      - uses: actions/checkout@v4
+        with:
+          repository: quidra-lang/math
+          ref: develop
+          path: math
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang llvm libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev ffmpeg libavformat-dev libavcodec-dev libavutil-dev libswscale-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang llvm pkg-config libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev
       - name: Build Quidra
         run: cmake -S quidra -B quidra/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQUIDRA_WARNINGS_AS_ERRORS=ON && cmake --build quidra/build --parallel
       - name: Require AMD hardware and run Vision numerical integration

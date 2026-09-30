@@ -8,15 +8,16 @@ int | error transform_image(tensor<uint8> pixels)
     tensor<uint8> edges = try vision.threshold(
         grayscale, cutoff = uint8(128)
     )
-    auto | error written = image.write("output.png", edges)
+    auto | error written = vision.write("output.png", edges)
     match written
         void
             print("saved")
+            print(NL)
         error problem
             return problem
     return 0
 
-tensor<uint8> | error loaded = image.read("input.png")
+tensor<uint8> | error loaded = vision.read<uint8>("input.png")
 match loaded
     tensor<uint8> pixels
         auto | error transformed = transform_image(pixels)
@@ -25,5 +26,7 @@ match loaded
                 int ignored = transformed
             error problem
                 print(problem)
+                print(NL)
     error problem
         print(problem)
+        print(NL)

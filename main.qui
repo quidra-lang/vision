@@ -1,3 +1,48 @@
+import math
+import native = "./native.qui"
+import internal = "./internal.qui"
+
+tensor<T> | error read<T: numeric>(
+    string path,
+    int channels = 0
+)
+    if channels != 0 and channels != 1 and channels != 3 and channels != 4
+        return error("vision.read channels must be 0, 1, 3, or 4")
+    uint64 handle = native.image_open(&path, channels)
+    if handle == uint64(0)
+        return error("vision.read failed to decode the image")
+    int channel_count = native.image_channels(handle)
+    int height = native.image_height(handle)
+    int width = native.image_width(handle)
+    if channel_count <= 0 or height <= 0 or width <= 0
+        native.image_close(handle)
+        return error("vision.read received invalid image metadata")
+    tensor<T> output = tensor.zeros<T>([channel_count, height, width])
+    int32 status = native.image_fill<T>(handle, &output)
+    native.image_close(handle)
+    if status != int32(0)
+        return error("vision.read failed to materialize the decoded image")
+    return output
+
+void | error write<T: numeric>(
+    string path,
+    tensor<T> pixels,
+    int quality = 90
+)
+    if quality < 1 or quality > 100
+        return error("vision.write quality must be between 1 and 100")
+    int[] shape = pixels.shape()
+    if len(shape) != 3
+        return error("vision.write requires a rank-3 CHW tensor")
+    if shape[0] != 1 and shape[0] != 3 and shape[0] != 4
+        return error("vision.write requires 1, 3, or 4 channels")
+    if not pixels.is_contiguous()
+        return error("vision.write requires a contiguous tensor")
+    int32 status = native.image_write<T>(&path, &pixels, quality)
+    if status != int32(0)
+        return error("vision.write failed; image codecs require a CPU tensor and a supported file extension")
+    return
+
 tensor<T> | error crop<T>(
     tensor<T> pixels,
     int top,
@@ -358,8 +403,8 @@ tensor<T> | error blur<T: floating>(tensor<T> pixels, int radius = 1)
     int[] kernel_indices = array(kernel_count, fill = 0)
     tensor<T> ones = pixels * 0.0 + 1.0
     tensor<T> kernel = ones.gather(kernel_indices, [side, side])
-    tensor<T> totals = pixels.convolve(kernel, padding = effective_radius)
-    tensor<T> coverage = ones.convolve(kernel, padding = effective_radius)
+    tensor<T> totals = internal.convolve2d(pixels, kernel, effective_radius)
+    tensor<T> coverage = internal.convolve2d(ones, kernel, effective_radius)
     return totals / coverage
 
 tensor<uint8> | error blur(tensor<uint8> pixels, int radius = 1)
@@ -397,12 +442,12 @@ tensor<uint8> | error blur(tensor<uint8> pixels, int radius = 1)
     tensor<int> kernel = values.gather(kernel_indices, [side, side])
     kernel = kernel * 0 + 1
 
-    tensor<int> totals = values.convolve(
-        kernel, padding = effective_radius
+    tensor<int> totals = internal.convolve2d(
+        values, kernel, effective_radius
     )
     tensor<int> coverage_source = values * 0 + 1
-    tensor<int> coverage = coverage_source.convolve(
-        kernel, padding = effective_radius
+    tensor<int> coverage = internal.convolve2d(
+        coverage_source, kernel, effective_radius
     )
 
     int count = planes * height * width
@@ -411,7 +456,8 @@ tensor<uint8> | error blur(tensor<uint8> pixels, int radius = 1)
     for index in range(count)
         flat_totals[index] = flat_totals[index].item() / flat_coverage[index].item()
 
-    return uint8(flat_totals).reshape(shape)
+    tensor<uint8> converted = try uint8(flat_totals)
+    return converted.reshape(shape)
 
 tensor<T> | error filter<T: floating, K: floating>(
     tensor<T> pixels,
@@ -463,7 +509,7 @@ tensor<T> | error filter<T: floating, K: floating>(
     tensor<T> flipped_kernel = typed_kernel.gather(
         kernel_indices, [kernel_height, kernel_width]
     )
-    tensor<T> expanded = pixels.convolve(flipped_kernel, padding = padding)
+    tensor<T> expanded = internal.convolve2d(pixels, flipped_kernel, padding)
     int[] expanded_shape = expanded.shape()
     int expanded_height = expanded_shape[height_axis]
     int expanded_width = expanded_shape[width_axis]
@@ -505,6 +551,15 @@ tensor<uint8> | error filter(
     if kernel_shape[0] <= 0 or kernel_shape[1] <= 0
         return error("vision.filter requires positive kernel dimensions")
 
+    // Vision owns the CPU uint8 filter kernel. Unsupported layout/device cases
+    // fall through to the portable Vision implementation below.
+    tensor<uint8> native_output = tensor.zeros<uint8>(shape)
+    int32 native_status = native.filter_u8(
+        &pixels, &kernel, &native_output, divisor, offset
+    )
+    if native_status == int32(0)
+        return native_output
+
     int height_axis = len(shape) - 2
     int width_axis = len(shape) - 1
     int height = shape[height_axis]
@@ -533,8 +588,8 @@ tensor<uint8> | error filter(
     tensor<int> flipped_kernel = kernel.gather(
         kernel_indices, [kernel_height, kernel_width]
     )
-    tensor<int> expanded = values.convolve(
-        flipped_kernel, padding = padding
+    tensor<int> expanded = internal.convolve2d(
+        values, flipped_kernel, padding
     )
     int[] expanded_shape = expanded.shape()
     int expanded_height = expanded_shape[height_axis]
@@ -564,7 +619,8 @@ tensor<uint8> | error filter(
             adjusted = 255
         flat[index] = adjusted
 
-    return uint8(flat).reshape(result_shape)
+    tensor<uint8> converted = try uint8(flat)
+    return converted.reshape(result_shape)
 
 tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
     int[] shape = pixels.shape()
@@ -615,7 +671,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
         horizontal_indices,
         [count, horizontal_width]
     )
-    tensor<T> horizontal_extrema = horizontal_windows.max_last()
+    tensor<T> horizontal_extrema = math.max_last(horizontal_windows)
     tensor<T> horizontal = horizontal_extrema.gather(selected, [count])
 
     int vertical_radius = radius
@@ -643,7 +699,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
         vertical_indices,
         [count, vertical_width]
     )
-    tensor<T> vertical_extrema = vertical_windows.max_last()
+    tensor<T> vertical_extrema = math.max_last(vertical_windows)
     return vertical_extrema.gather(selected, [count]).reshape(shape)
 
 tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
@@ -695,7 +751,7 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
         horizontal_indices,
         [count, horizontal_width]
     )
-    tensor<T> horizontal_extrema = horizontal_windows.min_last()
+    tensor<T> horizontal_extrema = math.min_last(horizontal_windows)
     tensor<T> horizontal = horizontal_extrema.gather(selected, [count])
 
     int vertical_radius = radius
@@ -723,6 +779,6 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
         vertical_indices,
         [count, vertical_width]
     )
-    tensor<T> vertical_extrema = vertical_windows.min_last()
+    tensor<T> vertical_extrema = math.min_last(vertical_windows)
     return vertical_extrema.gather(selected, [count]).reshape(shape)
 

@@ -1,0 +1,27 @@
+// Private Vision native bridge. Tensor values cross only as explicit
+// call-scoped borrows; native code treats their handles as opaque.
+extern int32 filter_u8(
+    const tensor<uint8> &pixels,
+    const tensor<int> &kernel,
+    tensor<uint8> &output,
+    int divisor,
+    int offset
+) = "vision_native_filter_u8"
+
+// Package-owned image codec bridge. Generic tensor externs specialize in Quidra
+// while sharing one ABI-identical C symbol; the native side inspects only the
+// public opaque tensor ABI.
+extern uint64 image_open(const string &path, int channels) = "vision_native_image_open"
+extern int image_channels(uint64 handle) = "vision_native_image_channels"
+extern int image_height(uint64 handle) = "vision_native_image_height"
+extern int image_width(uint64 handle) = "vision_native_image_width"
+extern int32 image_fill<T: numeric>(
+    uint64 handle,
+    tensor<T> &output
+) = "vision_native_image_fill"
+extern void image_close(uint64 handle) = "vision_native_image_close"
+extern int32 image_write<T: numeric>(
+    const string &path,
+    const tensor<T> &pixels,
+    int quality
+) = "vision_native_image_write"
