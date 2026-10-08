@@ -48,7 +48,7 @@ jobs:
       - name: Install Vision native dependencies
         run: bash scripts/install-linux-native-deps.sh
       - name: Build Quidra develop
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DQUIDRA_ENABLE_TEST_GPU_BACKEND=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DQUIDRA_ENABLE_TEST_GPU_BACKEND=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel ${{ runner.os == 'macOS' && 3 || 4 }}
       - name: Validate package metadata with Core
         run: quidra/build/quidra package validate "$GITHUB_WORKSPACE"
       - name: Install package through the package manager
@@ -101,7 +101,7 @@ jobs:
       - name: Install Quidra dependencies
         run: brew install ccache curl pkg-config libpng jpeg-turbo libtiff webp
       - name: Build Quidra develop
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix curl);$(brew --prefix libpng);$(brew --prefix jpeg-turbo);$(brew --prefix libtiff);$(brew --prefix webp);$(brew --prefix)" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix curl);$(brew --prefix libpng);$(brew --prefix jpeg-turbo);$(brew --prefix libtiff);$(brew --prefix webp);$(brew --prefix)" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel ${{ runner.os == 'macOS' && 3 || 4 }}
       - name: Real Metal GPU numerical integration
         env:
           QUIDRA_REQUIRE_REAL_GPU: "1"
