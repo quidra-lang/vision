@@ -111,6 +111,99 @@ tensor<T> | error resize<T>(tensor<T> pixels, int height, int width)
         indices[flat_index] = (plane * input_height + source_y) * input_width + source_x
     return pixels.gather(indices, output_shape)
 
+tensor<uint8> | error downsample_mean(tensor<uint8> pixels, int factor)
+    if pixels.is_tracked()
+        return error("vision.downsample_mean cannot operate on a tracked tensor; call untrack() explicitly")
+    int[] shape = pixels.shape()
+    if len(shape) < 3
+        return error("vision.downsample_mean requires rank >= 3 with trailing C, H, W dimensions")
+    for dimension in shape
+        if dimension <= 0
+            return error("vision.downsample_mean requires positive (..., C, H, W) dimensions")
+    if factor <= 0
+        return error("vision.downsample_mean factor must be positive")
+    int height_axis = len(shape) - 2
+    int width_axis = len(shape) - 1
+    if factor > shape[height_axis] or factor > shape[width_axis]
+        return error("vision.downsample_mean factor exceeds the image height or width")
+    if factor == 1
+        return pixels
+
+    int[] output_shape = shape
+    output_shape[height_axis] = shape[height_axis] / factor
+    output_shape[width_axis] = shape[width_axis] / factor
+
+    // Vision owns the CPU and Metal block-mean kernels. Where no Vision kernel
+    // can run (other backends), the portable Vision composition stays on the
+    // input device; a kernel failure is returned as an error.
+    tensor<uint8> source = pixels
+    if not source.is_contiguous()
+        source = source.contiguous()
+    tensor<uint8> native_output = internal.zeros_on<uint8>(output_shape, pixels.device())
+    int32 native_status = native.downsample_mean<uint8>(
+        &source, &native_output, factor
+    )
+    if native_status == int32(0)
+        return native_output
+    if not internal.block_native_unavailable(native_status)
+        return error(internal.block_native_problem(native_status))
+    return internal.block_mean_u8(source, factor)
+
+tensor<T> | error downsample_mean<T: floating>(tensor<T> pixels, int factor)
+    int[] shape = pixels.shape()
+    if len(shape) < 3
+        return error("vision.downsample_mean requires rank >= 3 with trailing C, H, W dimensions")
+    for dimension in shape
+        if dimension <= 0
+            return error("vision.downsample_mean requires positive (..., C, H, W) dimensions")
+    if factor <= 0
+        return error("vision.downsample_mean factor must be positive")
+    int height_axis = len(shape) - 2
+    int width_axis = len(shape) - 1
+    if factor > shape[height_axis] or factor > shape[width_axis]
+        return error("vision.downsample_mean factor exceeds the image height or width")
+    if factor == 1
+        return pixels
+
+    int[] output_shape = shape
+    output_shape[height_axis] = shape[height_axis] / factor
+    output_shape[width_axis] = shape[width_axis] / factor
+
+    // Vision owns the CPU and Metal block-mean kernels and their autograd
+    // (including backward(track = true)). A non-contiguous view is made
+    // contiguous first; a tracked one through one graph-preserving gather,
+    // because contiguous() requires untracked input. Where no Vision kernel
+    // can run (other backends, oversized Metal dispatches) the portable
+    // composition stays on the input device and keeps the graph; a kernel
+    // failure or a dtype the device cannot compute at all (float64 on Metal)
+    // is returned as an error.
+    tensor<T> source = pixels
+    if not source.is_contiguous()
+        if source.is_tracked()
+            source = internal.dense_copy<T>(source)
+        else
+            source = source.contiguous()
+    tensor<T> native_output = internal.zeros_on<T>(output_shape, pixels.device())
+    int32 native_status = native.downsample_mean<T>(
+        &source, &native_output, factor
+    )
+    if native_status == int32(0)
+        if native_output.is_tracked() and pixels.device() >= 0
+            // Core's device backward can hand a custom native node a strided
+            // gradient view (for example below a transpose()), and the native
+            // ABI exposes no strides. Core's reshape backward always delivers
+            // a contiguous gradient, so this metadata-only reshape (no forward
+            // copy) guarantees Vision's gradient kernel reads dense storage;
+            // it copies only when the incoming gradient really is strided.
+            // Remove it once Core densifies custom-native gradients itself:
+            // Core's symbolic reshape would reject a strided gradient if
+            // device backward(track = true) is enabled before that.
+            return native_output.reshape(output_shape)
+        return native_output
+    if not internal.block_native_unavailable(native_status)
+        return error(internal.block_native_problem(native_status))
+    return internal.block_mean<T>(source, factor)
+
 tensor<T> | error flip_horizontal<T>(tensor<T> pixels)
     int[] shape = pixels.shape()
     if len(shape) < 3

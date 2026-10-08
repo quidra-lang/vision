@@ -229,4 +229,150 @@ if [[ -e "$TMP/should-not-exist.png" ]]; then
     exit 1
 fi
 
+# The portable composition (the CUDA/HIP path) is reached through a copy of the
+# package's internal module and compared with the native kernels.
+cp "$REPOSITORY_ROOT/internal.qui" "$TMP/vision_internal.qui"
+
+cat > "$TMP/downsample-device.qui" <<'QUI'
+import vision
+import math
+import composition = "./vision_internal.qui"
+
+int differences(tensor<float32> left, tensor<float32> right)
+    int[] shape = left.shape()
+    int count = 0
+    for c in range(shape[0])
+        for y in range(shape[1])
+            for x in range(shape[2])
+                if left[c, y, x].item() != right[c, y, x].item()
+                    count += 1
+    return count
+
+int | error run()
+    tensor<float32> host = tensor.zeros<float32>([2, 7, 9])
+    tensor<uint8> host_bytes = tensor.zeros<uint8>([2, 7, 9])
+    int index = 0
+    for c in range(2)
+        for y in range(7)
+            for x in range(9)
+                host[c, y, x] = float32((index * 13) % 11) * float32(0.3) - float32(1)
+                host_bytes[c, y, x] = uint8((index * 57) % 256)
+                index += 1
+
+    // Results stay on the input's device and match the CPU result.
+    tensor<float32> on_device = try vision.downsample_mean(host.gpu(1), 3)
+    tensor<float32> on_host = try vision.downsample_mean(host, 3)
+    print(on_device.device())
+    print(NL)
+    print(differences(on_device.cpu(), on_host))
+    print(NL)
+
+    tensor<uint8> bytes_on_device = try vision.downsample_mean(host_bytes.gpu(0), 2)
+    tensor<uint8> bytes_on_host = try vision.downsample_mean(host_bytes, 2)
+    print(bytes_on_device.device())
+    print(NL)
+    tensor<uint8> bytes_back = bytes_on_device.cpu()
+    int byte_differences = 0
+    for c in range(2)
+        for y in range(3)
+            for x in range(4)
+                if bytes_back[c, y, x].item() != bytes_on_host[c, y, x].item()
+                    byte_differences += 1
+    print(byte_differences)
+    print(NL)
+
+    // Tracked device input keeps its graph and gradients on that device.
+    tensor<float32> source = host.gpu(0).track()
+    tensor<float32> reduced = try vision.downsample_mean(source, 3)
+    print(reduced.is_tracked())
+    print(NL)
+    math.mean(reduced).backward(&source)
+    print(source.grad.device())
+    print(NL)
+    tensor<float32> host_source = host.track()
+    tensor<float32> host_reduced = try vision.downsample_mean(host_source, 3)
+    math.mean(host_reduced).backward(&host_source)
+    print(differences(source.grad.cpu(), host_source.grad))
+    print(NL)
+
+    // A tracked non-contiguous view stays on the device, and its values and
+    // gradients match the CPU.
+    tensor<float32> view = host.gpu(0).transpose(1, 2).track()
+    tensor<float32> view_reduced = try vision.downsample_mean(view, 2)
+    print(view_reduced.device())
+    print(NL)
+    tensor<float32> host_view = host.transpose(1, 2).track()
+    tensor<float32> host_view_reduced = try vision.downsample_mean(host_view, 2)
+    math.mean(view_reduced * view_reduced).backward(&view)
+    math.mean(host_view_reduced * host_view_reduced).backward(&host_view)
+    print(view.grad.device())
+    print(NL)
+    print(differences(view.grad.cpu(), host_view.grad) + differences(view_reduced.untrack().cpu(), host_view_reduced.untrack()))
+    print(NL)
+
+    // A strided upstream gradient (transpose after the block mean) reaches
+    // the device gradient kernel densely and matches the CPU.
+    tensor<float32> weights = tensor.zeros<float32>([2, 3, 2])
+    for c in range(2)
+        for y in range(3)
+            for x in range(2)
+                weights[c, y, x] = float32(c * 6 + y * 2 + x + 1) * float32(0.25)
+    tensor<float32> strided_source = host.gpu(1).track()
+    tensor<float32> strided_reduced = try vision.downsample_mean(strided_source, 3)
+    math.mean(strided_reduced.transpose(1, 2) * weights.gpu(1)).backward(&strided_source)
+    tensor<float32> host_strided_source = host.track()
+    tensor<float32> host_strided_reduced = try vision.downsample_mean(host_strided_source, 3)
+    math.mean(host_strided_reduced.transpose(1, 2) * weights).backward(&host_strided_source)
+    print(strided_source.grad.device())
+    print(NL)
+    print(differences(strided_source.grad.cpu(), host_strided_source.grad))
+    print(NL)
+
+    // The portable composition gives the native results on CPU and on the
+    // device, for floating and uint8 input.
+    tensor<float32> portable_host = composition.block_mean<float32>(host, 3)
+    tensor<float32> portable_device = composition.block_mean<float32>(host.gpu(0), 3)
+    print(portable_device.device())
+    print(NL)
+    print(differences(portable_host, on_host) + differences(portable_device.cpu(), on_host))
+    print(NL)
+    tensor<uint8> portable_bytes_host = try composition.block_mean_u8(host_bytes, 2)
+    tensor<uint8> portable_bytes_device = try composition.block_mean_u8(host_bytes.gpu(1), 2)
+    print(portable_bytes_device.device())
+    print(NL)
+    tensor<uint8> portable_bytes_back = portable_bytes_device.cpu()
+    int portable_byte_differences = 0
+    for c in range(2)
+        for y in range(3)
+            for x in range(4)
+                if portable_bytes_host[c, y, x].item() != bytes_on_host[c, y, x].item()
+                    portable_byte_differences += 1
+                if portable_bytes_back[c, y, x].item() != bytes_on_host[c, y, x].item()
+                    portable_byte_differences += 1
+    print(portable_byte_differences)
+    print(NL)
+    tensor<float32> portable_source = host.gpu(0).track()
+    tensor<float32> portable_reduced = composition.block_mean<float32>(portable_source, 3)
+    math.mean(portable_reduced).backward(&portable_source)
+    print(differences(portable_source.grad.cpu(), host_source.grad))
+    print(NL)
+    return 0
+
+auto | error result = run()
+match result
+    int
+        int ignored = result
+    error problem
+        print(problem)
+        print(NL)
+QUI
+
+downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-device.qui")"
+downsample_expected="$(printf '1\n0\n0\n0\ntrue\n0\n0\n0\n0\n0\n1\n0\n0\n0\n1\n0\n0')"
+if [[ "$downsample_output" != "$downsample_expected" ]]; then
+    echo "unexpected Vision downsample_mean device output:" >&2
+    printf '%s\n' "$downsample_output" >&2
+    exit 1
+fi
+
 echo "vision device contracts: ok"

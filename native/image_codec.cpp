@@ -107,6 +107,42 @@ std::string extension_lower(const std::string& path) {
     return ext;
 }
 
+// Moves `pixels` samples of `channels` interleaved (HWC) channels into planar
+// (CHW) order, or back. The sample width is a compile-time constant so each
+// copy compiles to a single load/store instead of a memcpy call per sample.
+template <std::size_t Stride, bool ToPlanar>
+void reorder_samples(const std::uint8_t* source, std::uint8_t* destination,
+                     std::size_t pixels, std::size_t channels) {
+    for (std::size_t pixel = 0; pixel < pixels; ++pixel) {
+        for (std::size_t channel = 0; channel < channels; ++channel) {
+            const auto interleaved = (pixel * channels + channel) * Stride;
+            const auto planar = (channel * pixels + pixel) * Stride;
+            if constexpr (ToPlanar) {
+                std::memcpy(destination + planar, source + interleaved, Stride);
+            } else {
+                std::memcpy(destination + interleaved, source + planar, Stride);
+            }
+        }
+    }
+}
+
+template <bool ToPlanar>
+void reorder_image(const std::uint8_t* source, std::uint8_t* destination,
+                   std::size_t pixels, std::size_t channels, std::size_t stride) {
+    // One channel has the same layout in both orders.
+    if (channels == 1) {
+        if (pixels != 0) std::memcpy(destination, source, pixels * stride);
+        return;
+    }
+    switch (stride) {
+        case 1: reorder_samples<1, ToPlanar>(source, destination, pixels, channels); return;
+        case 2: reorder_samples<2, ToPlanar>(source, destination, pixels, channels); return;
+        case 4: reorder_samples<4, ToPlanar>(source, destination, pixels, channels); return;
+        case 8: reorder_samples<8, ToPlanar>(source, destination, pixels, channels); return;
+        default: throw std::invalid_argument("unsupported image sample width");
+    }
+}
+
 Image hwc_to_chw(const std::uint8_t* source, std::size_t height,
                  std::size_t width, std::size_t channels, int dtype) {
     if (channels != 1 && channels != 3 && channels != 4) {
@@ -121,15 +157,7 @@ Image hwc_to_chw(const std::uint8_t* source, std::size_t height,
     image.chw.resize(checked_product(sample_count(channels, height, width), stride,
                                      "image byte size overflow"));
     if (!image.chw.empty() && !source) throw std::invalid_argument("null image data");
-    for (std::size_t y = 0; y < height; ++y) {
-        for (std::size_t x = 0; x < width; ++x) {
-            for (std::size_t channel = 0; channel < channels; ++channel) {
-                const auto destination = ((channel * height + y) * width + x) * stride;
-                const auto input = ((y * width + x) * channels + channel) * stride;
-                std::memcpy(image.chw.data() + destination, source + input, stride);
-            }
-        }
-    }
+    reorder_image<true>(source, image.chw.data(), height * width, channels, stride);
     return image;
 }
 
@@ -137,15 +165,8 @@ std::vector<std::uint8_t> chw_to_hwc(const Image& image) {
     validate_image_shape(image);
     const auto stride = dtype_bytes(image.dtype);
     std::vector<std::uint8_t> output(image.chw.size());
-    for (std::size_t y = 0; y < image.height; ++y) {
-        for (std::size_t x = 0; x < image.width; ++x) {
-            for (std::size_t channel = 0; channel < image.channels; ++channel) {
-                const auto source = ((channel * image.height + y) * image.width + x) * stride;
-                const auto destination = ((y * image.width + x) * image.channels + channel) * stride;
-                std::memcpy(output.data() + destination, image.chw.data() + source, stride);
-            }
-        }
-    }
+    reorder_image<false>(image.chw.data(), output.data(),
+                         image.height * image.width, image.channels, stride);
     return output;
 }
 

@@ -83,4 +83,72 @@ if [[ "$output" != "$expected" ]]; then
     exit 1
 fi
 
+cat > "$TMP/downsample-dtypes.qui" <<'QUI'
+import vision
+
+int | error run()
+    // Block means keep the element type of the source.
+    tensor<uint8> bytes = tensor.zeros<uint8>([1, 2, 2])
+    bytes[0, 0, 0] = uint8(255)
+    bytes[0, 0, 1] = uint8(255)
+    bytes[0, 1, 0] = uint8(255)
+    bytes[0, 1, 1] = uint8(254)
+    tensor<uint8> small_bytes = try vision.downsample_mean(bytes, 2)
+    print(small_bytes[0, 0, 0].item())
+    print(NL)
+
+    tensor<float32> single = tensor.zeros<float32>([1, 2, 2])
+    single[0, 0, 0] = float32(1)
+    single[0, 0, 1] = float32(2)
+    single[0, 1, 0] = float32(3)
+    single[0, 1, 1] = float32(4.5)
+    tensor<float32> small_single = try vision.downsample_mean(single, 2)
+    print(small_single[0, 0, 0].item() == float32(2.625))
+    print(NL)
+
+    tensor<float> double = tensor.zeros<float>([1, 1, 3, 3])
+    double[0, 0, 0, 0] = 0.5
+    double[0, 0, 0, 1] = 1.5
+    double[0, 0, 1, 0] = 2.5
+    double[0, 0, 1, 1] = 4.0
+    double[0, 0, 2, 2] = 100.0
+    tensor<float> small_double = try vision.downsample_mean(double, 2)
+    print(small_double[0, 0, 0, 0].item() == 2.125)
+    print(NL)
+
+    // The CPU kernel keeps subnormal float32 values: four equal subnormals
+    // average to themselves exactly, and 1, 1, 2, 3 times the smallest
+    // subnormal sum to 7 of them, which rounds to 2 after the division by 4.
+    float32 tiny = float32(1.0e-39)
+    float32 smallest = float32(1.0e-45)
+    tensor<float32> subnormal = tensor.ones<float32>([1, 2, 4]) * tiny
+    subnormal[0, 0, 2] = smallest
+    subnormal[0, 0, 3] = smallest
+    subnormal[0, 1, 2] = smallest + smallest
+    subnormal[0, 1, 3] = smallest + smallest + smallest
+    tensor<float32> small_subnormal = try vision.downsample_mean(subnormal, 2)
+    print(
+        tiny > float32(0.0) and small_subnormal[0, 0, 0].item() == tiny
+        and small_subnormal[0, 0, 1].item() == smallest + smallest
+    )
+    print(NL)
+    return 0
+
+auto | error result = run()
+match result
+    int
+        int ignored = result
+    error problem
+        print(problem)
+        print(NL)
+QUI
+
+downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-dtypes.qui")"
+downsample_expected="$(printf '254\ntrue\ntrue\ntrue')"
+if [[ "$downsample_output" != "$downsample_expected" ]]; then
+    echo "unexpected vision downsample_mean dtype output:" >&2
+    printf '%s\n' "$downsample_output" >&2
+    exit 1
+fi
+
 echo "vision dtype integration: ok"

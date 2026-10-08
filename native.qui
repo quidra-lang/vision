@@ -8,6 +8,17 @@ extern int32 filter_u8(
     int offset
 ) = "vision_native_filter_u8"
 
+// Block-mean downsampling. One ABI-identical symbol serves the uint8 and
+// floating specializations; the native side dispatches on dtype and backend
+// and attaches Vision-owned autograd to tracked floating input. Nonzero
+// statuses are native/vision_native.cpp BlockStatus values; the caller maps
+// them with internal.block_native_unavailable / block_native_problem.
+extern int32 downsample_mean<T: numeric>(
+    const tensor<T> &pixels,
+    tensor<T> &output,
+    int factor
+) = "vision_native_downsample_mean"
+
 // Package-owned image codec bridge. Generic tensor externs specialize in Quidra
 // while sharing one ABI-identical C symbol; the native side inspects only the
 // public opaque tensor ABI.

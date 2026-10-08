@@ -160,4 +160,89 @@ if [[ "$properties_output" != "0" ]]; then
     exit 1
 fi
 
+cat > "$TMP/downsample-boundary.qui" <<'QUI'
+import vision
+
+bool rejects_float(tensor<float32> pixels, int factor)
+    tensor<float32> | error result = vision.downsample_mean(pixels, factor)
+    match result
+        tensor<float32>
+            return false
+        error
+            return true
+
+bool rejects_bytes(tensor<uint8> pixels, int factor)
+    tensor<uint8> | error result = vision.downsample_mean(pixels, factor)
+    match result
+        tensor<uint8>
+            return false
+        error
+            return true
+
+tensor<float32> image = tensor.zeros<float32>([1, 4, 6])
+tensor<uint8> bytes = tensor.zeros<uint8>([1, 4, 6])
+print(rejects_float(image, 0))
+print(NL)
+print(rejects_float(image, -2))
+print(NL)
+print(rejects_float(image, 5))
+print(NL)
+print(rejects_float(tensor.zeros<float32>([1, 6, 4]), 5))
+print(NL)
+print(rejects_float(tensor.zeros<float32>([4, 6]), 2))
+print(NL)
+print(rejects_float(tensor.zeros<float32>([1, 0, 6]), 1))
+print(NL)
+print(rejects_bytes(bytes, 0))
+print(NL)
+print(rejects_bytes(bytes, 7))
+print(NL)
+print(rejects_bytes(tensor.zeros<uint8>([4, 6]), 2))
+print(NL)
+print(rejects_float(image, 4))
+print(NL)
+print(rejects_bytes(bytes, 1))
+print(NL)
+QUI
+
+downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-boundary.qui")"
+downsample_expected="$(printf 'true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\nfalse\nfalse')"
+if [[ "$downsample_output" != "$downsample_expected" ]]; then
+    echo "unexpected vision downsample_mean boundary output:" >&2
+    printf '%s\n' "$downsample_output" >&2
+    exit 1
+fi
+
+# vision.downsample_mean falls back to the portable composition only where no
+# Vision kernel can run; every other native status becomes an error. The policy
+# lives in the package's internal module, reached through a copy.
+cp "$REPOSITORY_ROOT/internal.qui" "$TMP/vision_internal.qui"
+cat > "$TMP/downsample-status.qui" <<'QUI'
+import composition = "./vision_internal.qui"
+
+int[] statuses = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+for status in statuses
+    if composition.block_native_unavailable(int32(status))
+        print("{status} portable")
+    else
+        print("{status} error: {composition.block_native_problem(int32(status))}")
+    print(NL)
+QUI
+
+status_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-status.qui")"
+status_expected="1 error: vision.downsample_mean native kernel rejected its arguments (status 1)
+2 portable
+3 error: vision.downsample_mean native kernel rejected its arguments (status 3)
+4 error: vision.downsample_mean native kernel rejected its arguments (status 4)
+5 portable
+6 portable
+7 error: vision.downsample_mean device kernel failed
+8 error: vision.downsample_mean could not attach its autograd node
+9 error: vision.downsample_mean does not support float64 tensors on Metal, which has no float64 arithmetic; convert to float32 or move the tensor to the CPU explicitly"
+if [[ "$status_output" != "$status_expected" ]]; then
+    echo "unexpected vision downsample_mean native status policy:" >&2
+    printf '%s\n' "$status_output" >&2
+    exit 1
+fi
+
 echo "vision boundary tests: ok"

@@ -18,6 +18,10 @@ on:
     paths:
       - ".github/workflows/real-gpu-hardware.yml"
       - "main.qui"
+      - "internal.qui"
+      - "native.qui"
+      - "native/**"
+      - "project.toml"
       - "tests/real_gpu_integration.sh"
 
 concurrency:

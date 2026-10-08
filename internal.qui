@@ -99,3 +99,122 @@ tensor<T> convolve2d<T: numeric>(
     output_shape[height_axis] = output_height
     output_shape[width_axis] = output_width
     return result.reshape(output_shape)
+
+tensor<T> zeros_on<T: numeric>(int[] shape, int device)
+    if device >= 0
+        return tensor.zeros<T>(shape, gpu = device)
+    return tensor.zeros<T>(shape)
+
+// Portable block sums for vision.downsample_mean: every complete
+// factor x factor block of the trailing H, W axes, built from Core gather and
+// add only, so it runs on any device and keeps the autograd graph. Each block
+// row is summed left to right, then the row sums top to bottom - the order the
+// native kernels use - and trailing rows/columns outside every block are never
+// read.
+tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
+    int[] shape = pixels.shape()
+    int height_axis = len(shape) - 2
+    int width_axis = len(shape) - 1
+    int height = shape[height_axis]
+    int width = shape[width_axis]
+    int output_height = height / factor
+    int output_width = width / factor
+    int covered_height = output_height * factor
+    int planes = 1
+    for axis in range(height_axis)
+        planes = planes * shape[axis]
+
+    // Horizontal pass: [planes, covered_height, output_width] run sums.
+    int run_count = planes * covered_height * output_width
+    int[] run_starts = array(run_count, fill = 0)
+    for flat_index in range(run_count)
+        int ox = flat_index % output_width
+        int remaining = flat_index / output_width
+        int y = remaining % covered_height
+        int plane = remaining / covered_height
+        run_starts[flat_index] = (plane * height + y) * width + ox * factor
+    tensor<T> runs = pixels.gather(run_starts, [run_count])
+    int[] run_indices = array(run_count, fill = 0)
+    for dx in range(1, factor)
+        for flat_index in range(run_count)
+            run_indices[flat_index] = run_starts[flat_index] + dx
+        runs = runs + pixels.gather(run_indices, [run_count])
+
+    // Vertical pass over the run sums of each block.
+    int[] output_shape = shape
+    output_shape[height_axis] = output_height
+    output_shape[width_axis] = output_width
+    int output_count = planes * output_height * output_width
+    int[] block_tops = array(output_count, fill = 0)
+    for flat_index in range(output_count)
+        int ox = flat_index % output_width
+        int remaining = flat_index / output_width
+        int oy = remaining % output_height
+        int plane = remaining / output_height
+        block_tops[flat_index] = (
+            (plane * covered_height + oy * factor) * output_width + ox
+        )
+    tensor<T> total = runs.gather(block_tops, output_shape)
+    int[] block_rows = array(output_count, fill = 0)
+    for dy in range(1, factor)
+        for flat_index in range(output_count)
+            block_rows[flat_index] = block_tops[flat_index] + dy * output_width
+        total = total + runs.gather(block_rows, output_shape)
+    return total
+
+// factor * factor as a T scalar, exact whenever T can represent it.
+T block_size<T: floating>(int count)
+    T result = 0.0
+    T power = 1.0
+    int remaining = count
+    while remaining > 0
+        if remaining % 2 == 1
+            result = result + power
+        remaining = remaining / 2
+        if remaining > 0
+            power = power + power
+    return result
+
+// How vision.downsample_mean treats a nonzero native status
+// (native/vision_native.cpp BlockStatus). The portable composition runs only
+// where no Vision kernel can: no kernel for the dtype (2), no host storage lent
+// by Core (5 - on the CPU an uninitialized element, which the composition then
+// reports as Core's UNINITIALIZED), or no kernel for the backend or tensor size
+// (6). Every other status is returned as an error from block_native_problem.
+bool block_native_unavailable(int32 status)
+    return status == int32(2) or status == int32(5) or status == int32(6)
+
+string block_native_problem(int32 status)
+    if status == int32(9)
+        return "vision.downsample_mean does not support float64 tensors on Metal, which has no float64 arithmetic; convert to float32 or move the tensor to the CPU explicitly"
+    if status == int32(7)
+        return "vision.downsample_mean device kernel failed"
+    if status == int32(8)
+        return "vision.downsample_mean could not attach its autograd node"
+    return "vision.downsample_mean native kernel rejected its arguments (status {status})"
+
+// Portable floating block mean: the block sums divided once by
+// factor * factor. This is the vision.downsample_mean path for backends and
+// sizes without a Vision kernel (CUDA, HIP, tensors beyond the Metal kernels'
+// 32-bit dispatch).
+tensor<T> block_mean<T: floating>(tensor<T> pixels, int factor)
+    return block_sum<T>(pixels, factor) / block_size<T>(factor * factor)
+
+// Portable uint8 block mean: exact integer block sums, truncating quotient.
+tensor<uint8> | error block_mean_u8(tensor<uint8> pixels, int factor)
+    tensor<int> totals = block_sum<int>(int(pixels), factor)
+    tensor<uint8> means = try uint8(totals / (factor * factor))
+    return means
+
+// A contiguous copy of a tracked view in its logical element order. Core's
+// contiguous() requires an untracked tensor, so the copy is one Core gather,
+// which keeps the autograd graph and stays on the input device.
+tensor<T> dense_copy<T: numeric>(tensor<T> pixels)
+    int[] copy_shape = pixels.shape()
+    int element_count = 1
+    for axis_extent in copy_shape
+        element_count = element_count * axis_extent
+    int[] logical_order = array(element_count, fill = 0)
+    for logical_position in range(element_count)
+        logical_order[logical_position] = logical_position
+    return pixels.gather(logical_order, copy_shape)

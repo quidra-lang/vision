@@ -22,6 +22,14 @@ math = ">=0.5.0 <0.6.0"
 cpu = "native/vision_native.cpp"
 codecs = "native/image_codec.cpp"
 
+# Package-owned Metal kernels. Core lends its command queue and tensor buffers
+# through the native-extension ABI; Vision owns the image-domain kernels.
+[native.source.macos-arm64]
+metal = "native/vision_metal.mm"
+
+[native.source.macos-x86_64]
+metal = "native/vision_metal.mm"
+
 # Codec dependencies stay Vision-owned. Core only resolves generic package-native
 # dependency metadata through pkg-config.
 [native.pkg]

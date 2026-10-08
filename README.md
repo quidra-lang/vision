@@ -5,12 +5,13 @@ as `vision`. It works directly on tensors with rank >= 3 and trailing
 `(..., C, H, W)` dimensions. Image file I/O is owned by Vision itself through
 `vision.read` / `vision.write`; Core has no image codec or image namespace.
 
-Geometry operations and morphology preserve the input tensor element type. `grayscale`, `blur`, and `filter` use one public name across the `tensor<uint8>` image path and differentiable floating paths; Quidra's generic specialization resolves the dtype-specific implementation statically. `threshold` uses the same public name across the `tensor<uint8>` and floating paths. Because thresholding is discontinuous, tracked floating input is rejected rather than implicitly detached; untracked floating input is processed normally without creating an autograd graph.
+Geometry operations and morphology preserve the input tensor element type. `grayscale`, `blur`, `filter`, and `downsample_mean` use one public name across the `tensor<uint8>` image path and differentiable floating paths; Quidra's generic specialization resolves the dtype-specific implementation statically. `threshold` uses the same public name across the `tensor<uint8>` and floating paths. Because thresholding is discontinuous, tracked floating input is rejected rather than implicitly detached; untracked floating input is processed normally without creating an autograd graph.
 
 Invalid shapes or parameters are returned as `error`; they are never silently
 reinterpreted. This includes zero-size resize targets, out-of-bounds crops,
-unsupported grayscale channel counts, negative window radii, invalid filter
-kernels, and a zero filter divisor.
+downsample factors that are not positive or exceed the image, unsupported
+grayscale channel counts, negative window radii, invalid filter kernels, and a
+zero filter divisor.
 
 ## Install
 
@@ -48,6 +49,7 @@ import vision
 | `write` | `write<T: numeric>(string path, tensor<T> pixels, int quality = 90) -> void \| error` |
 | `crop` | `crop<T>(tensor<T> pixels, int top, int left, int height, int width) -> tensor<T> \| error` |
 | `resize` | `resize<T>(tensor<T> pixels, int height, int width) -> tensor<T> \| error` |
+| `downsample_mean` | `downsample_mean(tensor<uint8> pixels, int factor) -> tensor<uint8> \| error`; `downsample_mean<T: floating>(tensor<T> pixels, int factor) -> tensor<T> \| error` |
 | `flip_horizontal` | `flip_horizontal<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `flip_vertical` | `flip_vertical<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `rotate90` | `rotate90<T>(tensor<T> pixels) -> tensor<T> \| error` |
@@ -62,7 +64,27 @@ import vision
 
 `crop`, `resize`, flips, and rotations accept tensors with rank >= 3 and interpret the trailing dimensions as `(..., C, H, W)`, preserving every leading dimension. Floating tracked tensors remain tracked through these geometry operations and participate in autograd. Floating grayscale, blur/filter, and morphology paths are compositions of Core tensor primitives, so their graphs remain differentiable through `backward(track = true)` for higher-order derivatives as well as ordinary first-order backward. Thresholding never detaches implicitly and rejects tracked floating input.
 
-`resize` uses nearest-neighbor sampling. `rotate90` turns clockwise and
+`resize` uses nearest-neighbor sampling. `downsample_mean` instead averages
+areas: it divides height and width by an integer `factor` and replaces every
+complete `factor x factor` block with its mean, so thin structures are blended
+rather than aliased away. The result keeps every leading dimension and has
+`H / factor` rows and `W / factor` columns (integer division); trailing rows and
+columns that do not fill a whole block are ignored, so the result depends only
+on the top-left `(H / factor * factor) x (W / factor * factor)` region. A factor
+of 1 returns the input unchanged. Floating tensors accumulate each block in
+their own element type in one fixed order - every row of the block left to
+right, then the row sums top to bottom - and divide once by `factor * factor`;
+the native CPU and Metal kernels and the portable composition all use that
+order. The CPU and Metal kernels give bit-identical results for normal-range
+`float32` values, infinities and NaN, including for views and gradients; Metal
+flushes subnormal `float32` inputs and results to zero, where the CPU kernel
+keeps them. `tensor<uint8>` blocks are summed exactly and the quotient is truncated,
+as in the `uint8` `blur`. The block mean is linear, so tracked floating input
+stays tracked: backward spreads each output gradient evenly over its block
+(ignored samples receive zero), and `backward(track = true)` keeps that gradient
+differentiable for higher-order derivatives.
+
+`rotate90` turns clockwise and
 `rotate270` turns counter-clockwise; both exchange height and width. `rotate180`
 uses one direct geometry pass rather than composing two flips. These operations
 only relocate samples and therefore preserve the element type exactly.
@@ -97,7 +119,22 @@ morphology preserve the caller's device. Portable and differentiable paths use
 Core's generic tensor/autograd primitives; Vision may replace domain operations
 with package-owned native kernels when the device/layout contract matches. The
 current untracked contiguous CPU `uint8` filter path uses
-`native/vision_native.cpp` through Core's opaque native-extension ABI. If a backend/element-type combination is unavailable, the operation fails
+`native/vision_native.cpp` through Core's opaque native-extension ABI.
+`downsample_mean` has Vision-owned CPU kernels (`native/vision_native.cpp`) and
+Metal kernels (`native/vision_metal.mm`) with Vision-owned autograd for tracked
+floating input. A non-contiguous view is first made contiguous on its device
+(a tracked view through one graph-preserving gather). A backend without a
+Vision kernel (CUDA, HIP), or a Metal tensor too large for the kernels' 32-bit
+dispatch, uses the portable composition of Core gather/add/division on the
+input's device; its values equal the CPU kernel's exactly when that backend's
+division is correctly rounded, and may differ in the last bit where the backend
+uses fast-math division. `float64` on Metal returns an error, because Metal has
+no `float64` arithmetic for either path. A Vision kernel that fails (for example
+a failed Metal command buffer) also returns an error instead of switching to the
+composition. The
+native device kernels read GPU storage through Core's device-handle ABI, which
+has no initialization query yet, so an uninitialized GPU input is not reported
+as `UNINITIALIZED` the way CPU input is. If a backend/element-type combination is unavailable, the operation fails
 explicitly rather than iterating over hidden CPU storage or returning a CPU
 result. Codec and filesystem APIs remain host operations, so writing a GPU tensor
 still requires an explicit `.cpu()`. `vision.write` also requires contiguous
@@ -132,7 +169,7 @@ MIT
 ## Ownership boundary
 
 Vision owns image-domain semantics end to end: transforms, codecs, native C/C++
-implementations, and codec-library integration. The codec implementation lives in
+and Metal implementations, and codec-library integration. The codec implementation lives in
 `native/image_codec.cpp` and talks to tensors only through
 `<quidra/native_extension.h>`. Core does not provide image primitives, codec
 wrappers, or image-specific linker policy. The package manifest declares libpng,

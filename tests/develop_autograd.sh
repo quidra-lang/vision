@@ -313,4 +313,146 @@ if [[ "$floating_output" != "$floating_expected" ]]; then
     exit 1
 fi
 
+# The portable composition is vision.downsample_mean's path on backends without
+# a Vision kernel (CUDA, HIP). Tests reach it through a copy of the package's
+# internal module so it is checked against the native kernel here.
+cp "$REPOSITORY_ROOT/internal.qui" "$TMP/vision_internal.qui"
+
+cat > "$TMP/downsample-autograd.qui" <<'QUI'
+import vision
+import math
+import composition = "./vision_internal.qui"
+
+int differences(tensor<float32> left, tensor<float32> right)
+    int[] shape = left.shape()
+    int count = 0
+    for n in range(shape[0])
+        for c in range(shape[1])
+            for y in range(shape[2])
+                for x in range(shape[3])
+                    if left[n, c, y, x].item() != right[n, c, y, x].item()
+                        count += 1
+    return count
+
+tensor<float32> pattern(int batch, int channels, int height, int width)
+    tensor<float32> values = tensor.zeros<float32>([batch, channels, height, width])
+    int index = 0
+    for n in range(batch)
+        for c in range(channels)
+            for y in range(height)
+                for x in range(width)
+                    values[n, c, y, x] = float32((index * 29 + 3) % 19) * float32(0.21) - float32(1.7)
+                    index += 1
+    return values
+
+int | error run()
+    // The operation is linear: each covered sample receives the upstream
+    // gradient divided by factor * factor; uncovered samples receive zero.
+    tensor<float32> source = pattern(2, 1, 5, 7).track()
+    tensor<float32> reduced = try vision.downsample_mean(source, 2)
+    print(reduced.is_tracked())
+    print(NL)
+    math.mean(reduced).backward(&source)
+    // mean over 2 * 2 * 3 outputs, then / 4 per block sample
+    float32 expected = float32(1) / float32(48)
+    print(source.grad[1, 0, 3, 5].item() == expected)
+    print(NL)
+    print(source.grad[0, 0, 4, 0].item() == float32(0) and source.grad[0, 0, 0, 6].item() == float32(0))
+    print(NL)
+
+    // A tracked non-contiguous view is copied with one graph-preserving
+    // gather and then uses the native kernel; values and gradients match the
+    // contiguous input exactly.
+    tensor<float32> values = pattern(1, 2, 7, 8)
+    tensor<float32> transposed = values.transpose(2, 3).contiguous()
+    tensor<float32> view_source = transposed.transpose(2, 3).track()
+    tensor<float32> native_source = values.track()
+    tensor<float32> portable = try vision.downsample_mean(view_source, 3)
+    tensor<float32> native_result = try vision.downsample_mean(native_source, 3)
+    print(view_source.is_contiguous() == false)
+    print(NL)
+    print(differences(portable.untrack(), native_result.untrack()))
+    print(NL)
+    tensor<float32> weights = pattern(1, 2, 2, 2)
+    math.mean(portable * weights).backward(&view_source)
+    math.mean(native_result * weights).backward(&native_source)
+    print(differences(view_source.grad, native_source.grad))
+    print(NL)
+
+    // backward(track = true): the first gradient stays differentiable.
+    // L = mean(y * y) over a 2 x 2 result of ones: dL/dx = y / 8 = 0.125,
+    // and d mean(dL/dx) / dx = 1 / 128, accumulated onto the first gradient.
+    tensor<float32> high_source = tensor.ones<float32>([1, 1, 4, 4]).track()
+    tensor<float32> high = try vision.downsample_mean(high_source, 2)
+    math.mean(high * high).backward(&high_source, track = true)
+    tensor<float32> high_first = high_source.grad
+    print(high_first.is_tracked())
+    print(NL)
+    print(high_first.untrack()[0, 0, 2, 1].item() == float32(0.125))
+    print(NL)
+    math.mean(high_first).backward(&high_source)
+    print(high_source.grad.untrack()[0, 0, 3, 3].item() == float32(0.1328125))
+    print(NL)
+
+    // Third order alternates between the block mean and its adjoint.
+    tensor<float32> third_source = tensor.ones<float32>([1, 1, 4, 4]).track()
+    tensor<float32> third = try vision.downsample_mean(third_source, 2)
+    math.mean(third * third * third).backward(&third_source, track = true)
+    tensor<float32> third_first = third_source.grad
+    math.mean(third_first * third_first).backward(&third_source, track = true)
+    tensor<float32> third_second = third_source.grad
+    print(third_second.is_tracked())
+    print(NL)
+    print(third_second.untrack()[0, 0, 0, 0].item() == float32(0.1962890625))
+    print(NL)
+    // With y = 1: d mean(3y^2/16 + 9y^3/1024) / dx = (6/16 + 27/1024) / 16 =
+    // 411/16384, accumulated onto 3216/16384.
+    math.mean(third_second).backward(&third_source)
+    print(third_source.grad.untrack()[0, 0, 1, 3].item() == float32(0.22137451171875))
+    print(NL)
+
+    // The portable composition gives the native values and gradients, also
+    // below a transpose and through backward(track = true).
+    tensor<float32> native_high = pattern(2, 2, 9, 11).track()
+    tensor<float32> portable_high = pattern(2, 2, 9, 11).track()
+    tensor<float32> native_blocks = try vision.downsample_mean(native_high, 3)
+    tensor<float32> portable_blocks = composition.block_mean<float32>(portable_high, 3)
+    print(differences(native_blocks.untrack(), portable_blocks.untrack()))
+    print(NL)
+    tensor<float32> block_weights = pattern(2, 2, 3, 3)
+    math.mean(native_blocks.transpose(2, 3) * block_weights * native_blocks.transpose(2, 3)).backward(&native_high, track = true)
+    math.mean(portable_blocks.transpose(2, 3) * block_weights * portable_blocks.transpose(2, 3)).backward(&portable_high, track = true)
+    tensor<float32> native_high_first = native_high.grad
+    tensor<float32> portable_high_first = portable_high.grad
+    print(differences(native_high_first.untrack(), portable_high_first.untrack()))
+    print(NL)
+    math.mean(native_high_first.transpose(2, 3) * native_high_first.transpose(2, 3)).backward(&native_high)
+    math.mean(portable_high_first.transpose(2, 3) * portable_high_first.transpose(2, 3)).backward(&portable_high)
+    print(differences(native_high.grad.untrack(), portable_high.grad.untrack()))
+    print(NL)
+
+    tensor<float> wide_source = tensor.ones<float>([1, 3, 3]).track()
+    tensor<float> wide = try vision.downsample_mean(wide_source, 2)
+    math.mean(wide).backward(&wide_source)
+    print(wide_source.grad[0, 1, 1].item() == 0.25 and wide_source.grad[0, 2, 2].item() == 0.0)
+    print(NL)
+    return 0
+
+auto | error result = run()
+match result
+    int
+        int ignored = result
+    error problem
+        print(problem)
+        print(NL)
+QUI
+
+downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-autograd.qui")"
+downsample_expected="$(printf 'true\ntrue\ntrue\ntrue\n0\n0\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\n0\n0\n0\ntrue')"
+if [[ "$downsample_output" != "$downsample_expected" ]]; then
+    echo "unexpected Vision downsample_mean autograd output:" >&2
+    printf '%s\n' "$downsample_output" >&2
+    exit 1
+fi
+
 echo "vision develop autograd contracts: ok"

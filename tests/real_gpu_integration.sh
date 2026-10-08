@@ -41,9 +41,19 @@ if [[ -n "$REQUIRE_BACKEND" ]] && ! grep -Fq "backend: $REQUIRE_BACKEND" <<<"$gp
     skip_or_fail "gpu($GPU_INDEX) is not backend $REQUIRE_BACKEND"
 fi
 
+# Metal has no float64 arithmetic; vision.downsample_mean returns an error there
+# instead of aborting inside Core.
+IS_METAL=false
+if grep -Fq "backend: Metal" <<<"$gpu_block"; then IS_METAL=true; fi
+
+# The portable composition (the CUDA/HIP path) is reached through a copy of the
+# package's internal module.
+cp "$REPOSITORY_ROOT/internal.qui" "$TMP/vision_internal.qui"
+
 cat > "$TMP/vision-real-gpu.qui" <<QUI
 import vision
 import math
+import composition = "./vision_internal.qui"
 
 int | error run()
     tensor<uint8> cpu = tensor.zeros<uint8>([3, 3, 3])
@@ -150,6 +160,126 @@ int | error run()
     math.mean(gpu_float_blur_tracked).backward(&gpu_float_blur_source)
     print(gpu_float_blur_source.has_grad())
     print(NL)
+
+    // Block means: Vision's device kernels use the CPU accumulation order, so
+    // results match exactly, including a divisor that is not a power of two.
+    tensor<float32> cpu_blocks = tensor.zeros<float32>([2, 10, 14])
+    tensor<uint8> cpu_block_bytes = tensor.zeros<uint8>([2, 10, 14])
+    int block_index = 0
+    for c in range(2)
+        for y in range(10)
+            for x in range(14)
+                cpu_blocks[c, y, x] = float32((block_index * 31) % 17) * float32(0.13) - float32(0.9)
+                cpu_block_bytes[c, y, x] = uint8((block_index * 67) % 256)
+                block_index += 1
+    tensor<float32> cpu_block_mean = try vision.downsample_mean(cpu_blocks, 3)
+    tensor<float32> gpu_block_mean_device = try vision.downsample_mean(cpu_blocks.gpu($GPU_INDEX), 3)
+    print(gpu_block_mean_device.device() == $GPU_INDEX)
+    print(NL)
+    tensor<float32> gpu_block_mean = gpu_block_mean_device.cpu()
+    tensor<uint8> cpu_block_bytes_mean = try vision.downsample_mean(cpu_block_bytes, 3)
+    tensor<uint8> gpu_block_bytes_mean = (try vision.downsample_mean(cpu_block_bytes.gpu($GPU_INDEX), 3)).cpu()
+    int block_differences = 0
+    int byte_block_differences = 0
+    for c in range(2)
+        for y in range(3)
+            for x in range(4)
+                if cpu_block_mean[c, y, x].item() != gpu_block_mean[c, y, x].item()
+                    block_differences += 1
+                if cpu_block_bytes_mean[c, y, x].item() != gpu_block_bytes_mean[c, y, x].item()
+                    byte_block_differences += 1
+    print(block_differences == 0)
+    print(NL)
+    print(byte_block_differences == 0)
+    print(NL)
+
+    tensor<float32> cpu_block_source = cpu_blocks.track()
+    tensor<float32> cpu_block_tracked = try vision.downsample_mean(cpu_block_source, 3)
+    math.mean(cpu_block_tracked).backward(&cpu_block_source)
+    tensor<float32> gpu_block_source = cpu_blocks.gpu($GPU_INDEX).track()
+    tensor<float32> gpu_block_tracked = try vision.downsample_mean(gpu_block_source, 3)
+    math.mean(gpu_block_tracked).backward(&gpu_block_source)
+    tensor<float32> gpu_block_grad = gpu_block_source.grad.cpu()
+    int grad_differences = 0
+    for c in range(2)
+        for y in range(10)
+            for x in range(14)
+                if cpu_block_source.grad[c, y, x].item() != gpu_block_grad[c, y, x].item()
+                    grad_differences += 1
+    print(gpu_block_source.grad.device() == $GPU_INDEX and grad_differences == 0)
+    print(NL)
+
+    // A tracked strided view and a strided upstream gradient (transpose after
+    // the block mean) both use the Vision kernels and match the CPU exactly.
+    tensor<float32> cpu_view_source = cpu_blocks.transpose(1, 2).track()
+    tensor<float32> cpu_view_blocks = try vision.downsample_mean(cpu_view_source, 3)
+    math.mean(cpu_view_blocks.transpose(1, 2) * cpu_view_blocks.transpose(1, 2)).backward(&cpu_view_source)
+    tensor<float32> gpu_view_source = cpu_blocks.gpu($GPU_INDEX).transpose(1, 2).track()
+    tensor<float32> gpu_view_blocks = try vision.downsample_mean(gpu_view_source, 3)
+    math.mean(gpu_view_blocks.transpose(1, 2) * gpu_view_blocks.transpose(1, 2)).backward(&gpu_view_source)
+    tensor<float32> gpu_view_values = gpu_view_blocks.untrack().cpu()
+    tensor<float32> gpu_view_grad = gpu_view_source.grad.cpu()
+    int view_differences = 0
+    for c in range(2)
+        for y in range(4)
+            for x in range(3)
+                if cpu_view_blocks.untrack()[c, y, x].item() != gpu_view_values[c, y, x].item()
+                    view_differences += 1
+        for y in range(14)
+            for x in range(10)
+                if cpu_view_source.grad[c, y, x].item() != gpu_view_grad[c, y, x].item()
+                    view_differences += 1
+    print(gpu_view_source.grad.device() == $GPU_INDEX and view_differences == 0)
+    print(NL)
+
+    // The portable composition stays on the device; uint8 and power-of-two
+    // floating block means match the Vision kernels exactly.
+    tensor<uint8> portable_bytes = (try composition.block_mean_u8(cpu_block_bytes.gpu($GPU_INDEX), 3)).cpu()
+    tensor<float32> native_quarter = try vision.downsample_mean(cpu_blocks, 2)
+    tensor<float32> portable_quarter_device = composition.block_mean<float32>(cpu_blocks.gpu($GPU_INDEX), 2)
+    tensor<float32> portable_quarter = portable_quarter_device.cpu()
+    int portable_differences = 0
+    for c in range(2)
+        for y in range(3)
+            for x in range(4)
+                if portable_bytes[c, y, x].item() != cpu_block_bytes_mean[c, y, x].item()
+                    portable_differences += 1
+        for y in range(5)
+            for x in range(7)
+                if portable_quarter[c, y, x].item() != native_quarter[c, y, x].item()
+                    portable_differences += 1
+    print(portable_quarter_device.device() == $GPU_INDEX and portable_differences == 0)
+    print(NL)
+
+    // Normal-range values match the CPU exactly (above). A GPU may flush
+    // subnormal float32 values to zero (Metal does); it must never produce
+    // anything other than the CPU value or zero.
+    tensor<float32> subnormal = tensor.ones<float32>([1, 2, 4]) * float32(1.0e-39)
+    subnormal[0, 0, 2] = float32(1.0e-45)
+    subnormal[0, 0, 3] = float32(1.0e-45)
+    tensor<float32> cpu_subnormal = try vision.downsample_mean(subnormal, 2)
+    tensor<float32> gpu_subnormal = (try vision.downsample_mean(subnormal.gpu($GPU_INDEX), 2)).cpu()
+    bool subnormal_ok = true
+    for x in range(2)
+        float32 gpu_value = gpu_subnormal[0, 0, x].item()
+        if gpu_value != cpu_subnormal[0, 0, x].item() and gpu_value != float32(0.0)
+            subnormal_ok = false
+    print(subnormal_ok)
+    print(NL)
+
+    if $IS_METAL
+        tensor<float> double_pixels = tensor.ones<float>([1, 4, 6]).gpu($GPU_INDEX)
+        tensor<float> | error double_result = vision.downsample_mean(double_pixels, 2)
+        bool double_rejected = false
+        match double_result
+            tensor<float>
+                double_rejected = false
+            error
+                double_rejected = true
+        print(double_rejected)
+    else
+        print(true)
+    print(NL)
     return 0
 
 auto | error result = run()
@@ -162,7 +292,7 @@ match result
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-real-gpu.qui")"
-expected="$(printf 'true\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue\ntrue')"
+expected="$(printf 'true\n%.0s' {1..26})"
 if [[ "$output" != "$expected" ]]; then
     echo "Vision real GPU numerical equivalence failed on gpu($GPU_INDEX)" >&2
     printf '%s\n' "$output" >&2

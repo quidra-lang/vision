@@ -318,4 +318,175 @@ if [[ "$leading_output" != "$leading_expected" ]]; then
     exit 1
 fi
 
+cat > "$TMP/downsample.qui" <<'QUI'
+import vision
+
+int len_all(int[] shape)
+    int count = 1
+    for extent in shape
+        count = count * extent
+    return count
+
+// Reference block mean in the documented order: each block row left to right,
+// then the row sums top to bottom, divided once by factor * factor.
+float32 reference_mean(tensor<float32> pixels, int plane, int oy, int ox, int factor)
+    int[] shape = pixels.shape()
+    int height = shape[len(shape) - 2]
+    int width = shape[len(shape) - 1]
+    tensor<float32> flat = pixels.reshape([len_all(shape)])
+    float32 total = 0.0
+    for dy in range(factor)
+        int base = (plane * height + oy * factor + dy) * width + ox * factor
+        float32 row_sum = flat[base].item()
+        for dx in range(1, factor)
+            row_sum = row_sum + flat[base + dx].item()
+        if dy == 0
+            total = row_sum
+        else
+            total = total + row_sum
+    return total / float32(factor * factor)
+
+// Counts output samples that differ from the reference; `pixels` has any
+// rank >= 3 and the result keeps every leading dimension.
+int mismatches(tensor<float32> pixels, tensor<float32> reduced, int factor)
+    int[] shape = pixels.shape()
+    int[] reduced_shape = reduced.shape()
+    int rank = len(shape)
+    int planes = 1
+    for axis in range(rank - 2)
+        if reduced_shape[axis] != shape[axis]
+            return -1
+        planes = planes * shape[axis]
+    int output_height = reduced_shape[rank - 2]
+    int output_width = reduced_shape[rank - 1]
+    if output_height != shape[rank - 2] / factor or output_width != shape[rank - 1] / factor
+        return -1
+    tensor<float32> flat = reduced.reshape([planes * output_height * output_width])
+    int count = 0
+    for plane in range(planes)
+        for oy in range(output_height)
+            for ox in range(output_width)
+                float32 actual = flat[(plane * output_height + oy) * output_width + ox].item()
+                if actual != reference_mean(pixels, plane, oy, ox, factor)
+                    count += 1
+    return count
+
+tensor<float32> pattern(int[] shape)
+    int count = len_all(shape)
+    tensor<float32> flat = tensor.zeros<float32>([count])
+    for index in range(count)
+        flat[index] = float32((index * 37 + index / 7) % 23) * float32(0.37) - float32(1.1)
+    return flat.reshape(shape)
+
+int | error run()
+    // Multiple channels, a leading batch axis, and sizes that leave trailing
+    // rows and columns outside every block.
+    tensor<float32> image = pattern([3, 11, 14])
+    tensor<float32> batch = pattern([2, 2, 9, 10])
+    int[] factors = [2, 3, 4]
+    int total_mismatches = 0
+    for factor in factors
+        total_mismatches += mismatches(image, try vision.downsample_mean(image, factor), factor)
+        total_mismatches += mismatches(batch, try vision.downsample_mean(batch, factor), factor)
+    print(total_mismatches)
+    print(NL)
+
+    tensor<float32> reduced = try vision.downsample_mean(image, 3)
+    int[] reduced_shape = reduced.shape()
+    print(len(reduced_shape) == 3 and reduced_shape[0] == 3 and reduced_shape[1] == 3 and reduced_shape[2] == 4)
+    print(NL)
+
+    // Samples outside every complete block never contribute.
+    tensor<float32> edited = image.reshape([3 * 11 * 14])
+    for c in range(3)
+        for y in range(11)
+            edited[(c * 11 + y) * 14 + 13] = float32(1000)
+        for x in range(14)
+            edited[(c * 11 + 10) * 14 + x] = float32(-1000)
+    tensor<float32> edited_reduced = try vision.downsample_mean(edited.reshape([3, 11, 14]), 3)
+    print(mismatches(image, edited_reduced, 3))
+    print(NL)
+
+    // factor 1 keeps every sample; a factor equal to the extent averages the
+    // whole axis.
+    tensor<float32> same = try vision.downsample_mean(image, 1)
+    print(mismatches(image, same, 1))
+    print(NL)
+    tensor<float32> column = try vision.downsample_mean(pattern([1, 4, 9]), 4)
+    print(column.shape()[1] == 1 and column.shape()[2] == 2)
+    print(NL)
+
+    // Untracked non-contiguous views give the same result as their
+    // contiguous copy.
+    tensor<float32> transposed = pattern([3, 14, 11]).transpose(1, 2)
+    tensor<float32> from_view = try vision.downsample_mean(transposed, 3)
+    tensor<float32> from_copy = try vision.downsample_mean(transposed.contiguous(), 3)
+    print(transposed.is_contiguous() == false and mismatches(transposed.contiguous(), from_view, 3) == 0 and mismatches(transposed.contiguous(), from_copy, 3) == 0)
+    print(NL)
+
+    // A shrink built from gathers: the mean of factor x factor gathers over
+    // the top-left blocks of an 8-bit image equals downsample_mean followed by
+    // a crop to those blocks.
+    int factor = 4
+    int height = 8
+    int width = 12
+    tensor<float32> sem = tensor.zeros<float32>([1, 35, 50])
+    for y in range(35)
+        for x in range(50)
+            sem[0, y, x] = float32((y * 50 + x) * 97 % 256)
+    tensor<float32> gathered = tensor.zeros([1, height, width])
+    int[] indices = array(height * width, fill = 0)
+    for dy in range(factor)
+        for dx in range(factor)
+            for index in range(height * width)
+                indices[index] = ((index / width) * factor + dy) * 50 + (index % width) * factor + dx
+            gathered = gathered + sem.gather(indices, [1, height, width])
+    gathered = gathered / float32(factor * factor)
+    tensor<float32> blocks = try vision.downsample_mean(sem, factor)
+    tensor<float32> shrunk = try vision.crop(blocks, 0, 0, height, width)
+    int shrink_differences = 0
+    for y in range(height)
+        for x in range(width)
+            if shrunk[0, y, x].item() != gathered[0, y, x].item()
+                shrink_differences += 1
+    print(shrink_differences)
+    print(NL)
+
+    // uint8 sums exactly and truncates the quotient, like the uint8 blur.
+    tensor<uint8> bytes = tensor.zeros<uint8>([1, 2, 5])
+    bytes[0, 0, 0] = uint8(1)
+    bytes[0, 0, 1] = uint8(2)
+    bytes[0, 1, 0] = uint8(2)
+    bytes[0, 1, 1] = uint8(2)
+    bytes[0, 0, 2] = uint8(255)
+    bytes[0, 0, 3] = uint8(255)
+    bytes[0, 1, 2] = uint8(255)
+    bytes[0, 1, 3] = uint8(254)
+    bytes[0, 0, 4] = uint8(200)
+    tensor<uint8> small = try vision.downsample_mean(bytes, 2)
+    print(small.shape()[1] == 1 and small.shape()[2] == 2)
+    print(NL)
+    print(small[0, 0, 0].item())
+    print(NL)
+    print(small[0, 0, 1].item())
+    print(NL)
+    return 0
+
+auto | error result = run()
+match result
+    int
+        int ignored = result
+    error problem
+        print(problem)
+        print(NL)
+QUI
+
+downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample.qui")"
+downsample_expected="$(printf '0\ntrue\n0\n0\ntrue\ntrue\n0\ntrue\n1\n254')"
+if [[ "$downsample_output" != "$downsample_expected" ]]; then
+    echo "unexpected Vision downsample_mean output:" >&2
+    printf '%s\n' "$downsample_output" >&2
+    exit 1
+fi
+
 echo "vision integration: ok"
