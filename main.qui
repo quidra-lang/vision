@@ -141,7 +141,7 @@ tensor<nat8> | error downsample_mean(tensor<nat8> pixels, int factor)
         source = source.contiguous()
     tensor<nat8> native_output = internal.zeros_on<nat8>(output_shape, pixels.device())
     int32 native_status = native.downsample_mean<nat8>(
-        $1int64(factor)
+        &source, &native_output, int64(factor)
     )
     if native_status == int32(0)
         return native_output
@@ -185,7 +185,7 @@ tensor<T> | error downsample_mean<T: floating>(tensor<T> pixels, int factor)
             source = source.contiguous()
     tensor<T> native_output = internal.zeros_on<T>(output_shape, pixels.device())
     int32 native_status = native.downsample_mean<T>(
-        $1int64(factor)
+        &source, &native_output, int64(factor)
     )
     if native_status == int32(0)
         if native_output.is_tracked() and pixels.device() >= 0
@@ -648,7 +648,7 @@ tensor<nat8> | error filter(
     // fall through to the portable Vision implementation below.
     tensor<nat8> native_output = tensor.zeros<nat8>(nat(shape))
     int32 native_status = native.filter_u8(
-        $1int64(divisor), int64(offset)
+        &pixels, &kernel, &native_output, int64(divisor), int64(offset)
     )
     if native_status == int32(0)
         return native_output
