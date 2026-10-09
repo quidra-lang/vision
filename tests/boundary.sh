@@ -246,4 +246,39 @@ if [[ "$status_output" != "$status_expected" ]]; then
     exit 1
 fi
 
+# Package-defined errors expose stable codes independently of their text.
+cat > "$TMP/vision-codes.qui" <<'QUI'
+import vision
+
+tensor<nat8> pixels = tensor.zeros<nat8>([3, 2, 2])
+tensor<nat8> | error bad_shape = vision.resize(pixels, height = 0, width = 2)
+match bad_shape
+    tensor<nat8>
+        print(false)
+    error problem
+        print(problem.code == "VISION_ARGUMENT")
+print(NL)
+
+tensor<nat8> | error bad_radius = vision.dilate(pixels, radius = -1)
+match bad_radius
+    tensor<nat8>
+        print(false)
+    error problem
+        print(problem.code == "VISION_ARGUMENT")
+print(NL)
+
+tensor<nat8> | error bad_tracked = vision.grayscale(pixels.track())
+match bad_tracked
+    tensor<nat8>
+        print(false)
+    error problem
+        print(problem.code == "VISION_TRACKED")
+print(NL)
+QUI
+codes_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-codes.qui")"
+if [[ "$codes_output" != "$(printf 'true\ntrue\ntrue')" ]]; then
+    printf 'vision code mismatch: %s\n' "$codes_output" >&2
+    exit 1
+fi
+
 echo "vision boundary tests: ok"
