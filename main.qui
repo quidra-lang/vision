@@ -79,7 +79,7 @@ tensor<T> | error crop<T>(
         int y = (flat_index / width) % height
         int plane = flat_index / (height * width)
         indices[flat_index] = (plane * input_height + top + y) * input_width + left + x
-    return pixels.gather(indices, nat(output_shape))
+    return pixels.gather(indices, try nat(output_shape))
 
 tensor<T> | error resize<T>(tensor<T> pixels, int height, int width)
     int[] shape = int(pixels.shape())
@@ -109,7 +109,7 @@ tensor<T> | error resize<T>(tensor<T> pixels, int height, int width)
         int source_y = y * input_height / height
         int source_x = x * input_width / width
         indices[flat_index] = (plane * input_height + source_y) * input_width + source_x
-    return pixels.gather(indices, nat(output_shape))
+    return pixels.gather(indices, try nat(output_shape))
 
 tensor<nat8> | error downsample_mean(tensor<nat8> pixels, int factor)
     if pixels.is_tracked()
@@ -198,7 +198,7 @@ tensor<T> | error downsample_mean<T: floating>(tensor<T> pixels, int factor)
             // Remove it once Core densifies custom-native gradients itself:
             // Core's symbolic reshape would reject a strided gradient if
             // device backward(track = true) is enabled before that.
-            return native_output.reshape(nat(output_shape))
+            return native_output.reshape(try nat(output_shape))
         return native_output
     if not internal.block_native_unavailable(native_status)
         return error(internal.block_native_problem(native_status))
@@ -225,7 +225,7 @@ tensor<T> | error flip_horizontal<T>(tensor<T> pixels)
         int y = (flat_index / width) % height
         int plane = flat_index / (height * width)
         indices[flat_index] = (plane * height + y) * width + (width - 1 - x)
-    return pixels.gather(indices, nat(shape))
+    return pixels.gather(indices, try nat(shape))
 
 tensor<T> | error flip_vertical<T>(tensor<T> pixels)
     int[] shape = int(pixels.shape())
@@ -248,7 +248,7 @@ tensor<T> | error flip_vertical<T>(tensor<T> pixels)
         int y = (flat_index / width) % height
         int plane = flat_index / (height * width)
         indices[flat_index] = (plane * height + (height - 1 - y)) * width + x
-    return pixels.gather(indices, nat(shape))
+    return pixels.gather(indices, try nat(shape))
 
 tensor<T> | error rotate90<T>(tensor<T> pixels)
     int[] shape = int(pixels.shape())
@@ -278,7 +278,7 @@ tensor<T> | error rotate90<T>(tensor<T> pixels)
         int source_y = input_height - 1 - x
         int source_x = y
         indices[flat_index] = (plane * input_height + source_y) * input_width + source_x
-    return pixels.gather(indices, nat(output_shape))
+    return pixels.gather(indices, try nat(output_shape))
 
 tensor<T> | error rotate180<T>(tensor<T> pixels)
     int[] shape = int(pixels.shape())
@@ -301,7 +301,7 @@ tensor<T> | error rotate180<T>(tensor<T> pixels)
         int y = (flat_index / width) % height
         int plane = flat_index / (height * width)
         indices[flat_index] = (plane * height + (height - 1 - y)) * width + (width - 1 - x)
-    return pixels.gather(indices, nat(shape))
+    return pixels.gather(indices, try nat(shape))
 
 tensor<T> | error rotate270<T>(tensor<T> pixels)
     int[] shape = int(pixels.shape())
@@ -331,7 +331,7 @@ tensor<T> | error rotate270<T>(tensor<T> pixels)
         int source_y = x
         int source_x = input_width - 1 - y
         indices[flat_index] = (plane * input_height + source_y) * input_width + source_x
-    return pixels.gather(indices, nat(output_shape))
+    return pixels.gather(indices, try nat(output_shape))
 
 tensor<nat8> | error grayscale(tensor<nat8> pixels)
     if pixels.is_tracked()
@@ -370,15 +370,15 @@ tensor<nat8> | error grayscale(tensor<nat8> pixels)
             blue_indices[flat_index] = image_base + 2 * height * width + y * width + x
 
     tensor<int64> values = int64(pixels)
-    tensor<int64> red = values.gather(red_indices, nat(output_shape))
+    tensor<int64> red = values.gather(red_indices, try nat(output_shape))
     if channels == 1
         return nat8(red)
 
-    tensor<int64> green = values.gather(green_indices, nat(output_shape))
-    tensor<int64> blue = values.gather(blue_indices, nat(output_shape))
+    tensor<int64> green = values.gather(green_indices, try nat(output_shape))
+    tensor<int64> blue = values.gather(blue_indices, try nat(output_shape))
     tensor<int64> gray = (
-        red * 299 + green * 587 + blue * 114 + 500
-    ) / 1000
+        red * int64(299) + green * int64(587) + blue * int64(114) + int64(500)
+    ) / int64(1000)
     return nat8(gray)
 
 tensor<T> | error grayscale<T: floating>(tensor<T> pixels)
@@ -415,11 +415,11 @@ tensor<T> | error grayscale<T: floating>(tensor<T> pixels)
             green_indices[flat_index] = image_base + height * width + y * width + x
             blue_indices[flat_index] = image_base + 2 * height * width + y * width + x
 
-    tensor<T> red = pixels.gather(red_indices, nat(output_shape))
+    tensor<T> red = pixels.gather(red_indices, try nat(output_shape))
     if channels == 1
         return red
-    tensor<T> green = pixels.gather(green_indices, nat(output_shape))
-    tensor<T> blue = pixels.gather(blue_indices, nat(output_shape))
+    tensor<T> green = pixels.gather(green_indices, try nat(output_shape))
+    tensor<T> blue = pixels.gather(blue_indices, try nat(output_shape))
     return (red * 299.0 + green * 587.0 + blue * 114.0) / 1000.0
 
 tensor<T> | error threshold<T: floating>(
@@ -440,12 +440,12 @@ tensor<T> | error threshold<T: floating>(
     int count = 1
     for dimension in shape
         count = count * dimension
-    tensor<T> flat = pixels.reshape([nat(count)])
+    tensor<T> flat = pixels.reshape([try nat(count)])
     tensor<T> result = flat * 0.0 + low
     for index in range(count)
         if flat[index].item() >= cutoff
             result[index] = high
-    return result.reshape(nat(shape))
+    return result.reshape(try nat(shape))
 
 tensor<nat8> | error threshold(
     tensor<nat8> pixels,
@@ -544,13 +544,13 @@ tensor<nat8> | error blur(tensor<nat8> pixels, int radius = 1)
     )
 
     int count = planes * height * width
-    tensor<int64> flat_totals = totals.reshape([nat(count)])
-    tensor<int64> flat_coverage = coverage.reshape([nat(count)])
+    tensor<int64> flat_totals = totals.reshape([try nat(count)])
+    tensor<int64> flat_coverage = coverage.reshape([try nat(count)])
     for index in range(count)
         flat_totals[index] = flat_totals[index].item() / flat_coverage[index].item()
 
     tensor<nat8> converted = try nat8(flat_totals)
-    return converted.reshape(nat(shape))
+    return converted.reshape(try nat(shape))
 
 tensor<T> | error filter<T: floating, K: floating>(
     tensor<T> pixels,
@@ -619,7 +619,7 @@ tensor<T> | error filter<T: floating, K: floating>(
             (plane * expanded_height + crop_top + y) * expanded_width
             + crop_left + x
         )
-    tensor<T> filtered = expanded.gather(filtered_indices, nat(shape))
+    tensor<T> filtered = expanded.gather(filtered_indices, try nat(shape))
     return filtered / typed_divisor + typed_offset
 
 tensor<nat8> | error filter(
@@ -646,7 +646,7 @@ tensor<nat8> | error filter(
 
     // Vision owns the CPU nat8 filter kernel. Unsupported layout/device cases
     // fall through to the portable Vision implementation below.
-    tensor<nat8> native_output = tensor.zeros<nat8>(nat(shape))
+    tensor<nat8> native_output = tensor.zeros<nat8>(try nat(shape))
     int32 native_status = native.filter_u8(
         &pixels, &kernel, &native_output, int64(divisor), int64(offset)
     )
@@ -700,7 +700,7 @@ tensor<nat8> | error filter(
             (plane * expanded_height + crop_top + y) * expanded_width
             + crop_left + x
         )
-    tensor<int64> filtered = expanded.gather(filtered_indices, nat(shape))
+    tensor<int64> filtered = expanded.gather(filtered_indices, try nat(shape))
     int[] result_shape = int(filtered.shape())
 
     tensor<int64> flat = filtered.reshape([nat(input_count)])
@@ -713,9 +713,9 @@ tensor<nat8> | error filter(
         flat[index] = adjusted
 
     tensor<nat8> converted = try nat8(flat)
-    return converted.reshape(nat(result_shape))
+    return converted.reshape(try nat(result_shape))
 
-tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
+tensor<T> | error dilate<T: ordered>(tensor<T> pixels, int radius = 1)
     int[] shape = int(pixels.shape())
     if len(shape) < 3
         return error("vision.dilate requires rank >= 3 with trailing C, H, W dimensions")
@@ -736,7 +736,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
     int[] flat_indices = array(nat(count), fill = 0)
     for flat_index in range(count)
         flat_indices[flat_index] = flat_index
-    tensor<T> flat = pixels.gather(flat_indices, [nat(count)])
+    tensor<T> flat = pixels.gather(flat_indices, [try nat(count)])
 
     int horizontal_radius = radius
     if horizontal_radius > width - 1
@@ -744,7 +744,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
     int horizontal_width = horizontal_radius * 2 + 1
     if count > 9223372036854775807 / horizontal_width
         return error("vision.dilate horizontal workspace is too large")
-    int[] horizontal_indices = array(count * horizontal_width, fill = 0)
+    int[] horizontal_indices = array(try nat(count * horizontal_width), fill = 0)
     int[] selected = array(nat(count), fill = 0)
     for flat_index in range(count)
         int x = flat_index % width
@@ -762,10 +762,10 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
 
     tensor<T> horizontal_windows = flat.gather(
         horizontal_indices,
-        [count, horizontal_width]
+        [try nat(count), try nat(horizontal_width)]
     )
-    tensor<T> horizontal_extrema = math.max_last(horizontal_windows)
-    tensor<T> horizontal = horizontal_extrema.gather(selected, [nat(count)])
+    tensor<T> horizontal_extrema = math.max_last<T>(horizontal_windows)
+    tensor<T> horizontal = horizontal_extrema.gather(selected, [try nat(count)])
 
     int vertical_radius = radius
     if vertical_radius > height - 1
@@ -773,7 +773,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
     int vertical_width = vertical_radius * 2 + 1
     if count > 9223372036854775807 / vertical_width
         return error("vision.dilate vertical workspace is too large")
-    int[] vertical_indices = array(count * vertical_width, fill = 0)
+    int[] vertical_indices = array(try nat(count * vertical_width), fill = 0)
     for flat_index in range(count)
         int x = flat_index % width
         int remaining = flat_index / width
@@ -790,12 +790,12 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
 
     tensor<T> vertical_windows = horizontal.gather(
         vertical_indices,
-        [count, vertical_width]
+        [try nat(count), try nat(vertical_width)]
     )
-    tensor<T> vertical_extrema = math.max_last(vertical_windows)
-    return vertical_extrema.gather(selected, [nat(count)]).reshape(nat(shape))
+    tensor<T> vertical_extrema = math.max_last<T>(vertical_windows)
+    return vertical_extrema.gather(selected, [try nat(count)]).reshape(try nat(shape))
 
-tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
+tensor<T> | error erode<T: ordered>(tensor<T> pixels, int radius = 1)
     int[] shape = int(pixels.shape())
     if len(shape) < 3
         return error("vision.erode requires rank >= 3 with trailing C, H, W dimensions")
@@ -816,7 +816,7 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
     int[] flat_indices = array(nat(count), fill = 0)
     for flat_index in range(count)
         flat_indices[flat_index] = flat_index
-    tensor<T> flat = pixels.gather(flat_indices, [nat(count)])
+    tensor<T> flat = pixels.gather(flat_indices, [try nat(count)])
 
     int horizontal_radius = radius
     if horizontal_radius > width - 1
@@ -824,7 +824,7 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
     int horizontal_width = horizontal_radius * 2 + 1
     if count > 9223372036854775807 / horizontal_width
         return error("vision.erode horizontal workspace is too large")
-    int[] horizontal_indices = array(count * horizontal_width, fill = 0)
+    int[] horizontal_indices = array(try nat(count * horizontal_width), fill = 0)
     int[] selected = array(nat(count), fill = 0)
     for flat_index in range(count)
         int x = flat_index % width
@@ -842,10 +842,10 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
 
     tensor<T> horizontal_windows = flat.gather(
         horizontal_indices,
-        [count, horizontal_width]
+        [try nat(count), try nat(horizontal_width)]
     )
-    tensor<T> horizontal_extrema = math.min_last(horizontal_windows)
-    tensor<T> horizontal = horizontal_extrema.gather(selected, [nat(count)])
+    tensor<T> horizontal_extrema = math.min_last<T>(horizontal_windows)
+    tensor<T> horizontal = horizontal_extrema.gather(selected, [try nat(count)])
 
     int vertical_radius = radius
     if vertical_radius > height - 1
@@ -853,7 +853,7 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
     int vertical_width = vertical_radius * 2 + 1
     if count > 9223372036854775807 / vertical_width
         return error("vision.erode vertical workspace is too large")
-    int[] vertical_indices = array(count * vertical_width, fill = 0)
+    int[] vertical_indices = array(try nat(count * vertical_width), fill = 0)
     for flat_index in range(count)
         int x = flat_index % width
         int remaining = flat_index / width
@@ -870,8 +870,8 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
 
     tensor<T> vertical_windows = horizontal.gather(
         vertical_indices,
-        [count, vertical_width]
+        [try nat(count), try nat(vertical_width)]
     )
-    tensor<T> vertical_extrema = math.min_last(vertical_windows)
-    return vertical_extrema.gather(selected, [nat(count)]).reshape(nat(shape))
+    tensor<T> vertical_extrema = math.min_last<T>(vertical_windows)
+    return vertical_extrema.gather(selected, [try nat(count)]).reshape(try nat(shape))
 
