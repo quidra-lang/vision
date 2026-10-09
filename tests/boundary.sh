@@ -267,9 +267,10 @@ match bad_radius
         print(problem.code == "VISION_ARGUMENT")
 print(NL)
 
-tensor<nat8> | error bad_tracked = vision.grayscale(pixels.track())
+tensor<real32> floating = tensor.ones<real32>([3, 2, 2]).track()
+tensor<real32> | error bad_tracked = vision.threshold(floating, cutoff = real32(0.5))
 match bad_tracked
-    tensor<nat8>
+    tensor<real32>
         print(false)
     error problem
         print(problem.code == "VISION_TRACKED")
