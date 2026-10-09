@@ -202,7 +202,7 @@ tensor<T> block_mean<T: floating>(tensor<T> pixels, int factor)
 
 // Portable nat8 block mean: exact integer block sums, truncating quotient.
 tensor<nat8> | error block_mean_u8(tensor<nat8> pixels, int factor)
-    tensor<int64> totals = block_sum<int>(int(pixels), factor)
+    tensor<int64> totals = block_sum<int64>(int64(pixels), factor)
     tensor<nat8> means = try nat8(totals / (factor * factor))
     return means
 

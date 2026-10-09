@@ -369,7 +369,7 @@ tensor<nat8> | error grayscale(tensor<nat8> pixels)
             green_indices[flat_index] = image_base + height * width + y * width + x
             blue_indices[flat_index] = image_base + 2 * height * width + y * width + x
 
-    tensor<int64> values = int(pixels)
+    tensor<int64> values = int64(pixels)
     tensor<int64> red = values.gather(red_indices, nat(output_shape))
     if channels == 1
         return nat8(red)
@@ -465,7 +465,7 @@ tensor<nat8> | error threshold(
     int cutoff_value = int(cutoff)
     int low_value = int(low)
     int high_value = int(high)
-    tensor<int64> values = int(pixels)
+    tensor<int64> values = int64(pixels)
     tensor<int64> mask = (values + (256 - cutoff_value)) / 256
     tensor<int64> result = low_value + mask * (high_value - low_value)
     return nat8(result)
@@ -530,7 +530,7 @@ tensor<nat8> | error blur(tensor<nat8> pixels, int radius = 1)
 
     int side = effective_radius * 2 + 1
     int kernel_count = side * side
-    tensor<int64> values = int(pixels)
+    tensor<int64> values = int64(pixels)
     int[] kernel_indices = array(nat(kernel_count), fill = 0)
     tensor<int64> kernel = values.gather(kernel_indices, [nat(side), nat(side)])
     kernel = kernel * 0 + 1
@@ -668,7 +668,7 @@ tensor<nat8> | error filter(
     if center_x > padding
         padding = center_x
 
-    tensor<int64> values = int(pixels)
+    tensor<int64> values = int64(pixels)
     int kernel_count = kernel_height * kernel_width
     int[] kernel_indices = array(nat(kernel_count), fill = 0)
     for flat_index in range(kernel_count)
