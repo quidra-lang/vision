@@ -161,6 +161,22 @@ See [`examples/process.qui`](examples/process.qui).
 
 See [`docs/development.md`](docs/development.md) for the canonical main/develop and release procedure.
 
+## Errors
+
+Vision error values identify their failure category with a stable package
+code. The text of each diagnostic remains operation-specific. Errors from
+Core numeric conversions propagate with their original Core code.
+
+| Code | Meaning | Typical cause |
+| --- | --- | --- |
+| `VISION_ARGUMENT` | Invalid operation argument | Bad radius, quality, factor or divisor |
+| `VISION_SHAPE` | Incompatible tensor geometry or storage | Rank, dimensions, crop bounds or channels |
+| `VISION_SIZE` | Tensor/workspace exceeds supported size | Large morphology working set |
+| `VISION_TRACKED` | Operation disallows tracked tensors | Grayscale or threshold on a tracked input |
+| `VISION_DECODE` | Image decode failure | Unreadable image data or metadata |
+| `VISION_ENCODE` | Image write failure | Unsupported output encoding |
+| `VISION_NATIVE` | Package native-kernel failure | Block-mean execution error |
+
 ## License
 
 MIT
