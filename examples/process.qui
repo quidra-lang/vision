@@ -1,12 +1,12 @@
 import vision
 
-int | error transform_image(tensor<uint8> pixels)
-    tensor<uint8> resized = try vision.resize(
+int | error transform_image(tensor<nat8> pixels)
+    tensor<nat8> resized = try vision.resize(
         pixels, height = 256, width = 256
     )
-    tensor<uint8> grayscale = try vision.grayscale(resized)
-    tensor<uint8> edges = try vision.threshold(
-        grayscale, cutoff = uint8(128)
+    tensor<nat8> grayscale = try vision.grayscale(resized)
+    tensor<nat8> edges = try vision.threshold(
+        grayscale, cutoff = nat8(128)
     )
     auto | error written = vision.write("output.png", edges)
     match written
@@ -17,9 +17,9 @@ int | error transform_image(tensor<uint8> pixels)
             return problem
     return 0
 
-tensor<uint8> | error loaded = vision.read<uint8>("input.png")
+tensor<nat8> | error loaded = vision.read<nat8>("input.png")
 match loaded
-    tensor<uint8> pixels
+    tensor<nat8> pixels
         auto | error transformed = transform_image(pixels)
         match transformed
             int

@@ -5,7 +5,7 @@ as `vision`. It works directly on tensors with rank >= 3 and trailing
 `(..., C, H, W)` dimensions. Image file I/O is owned by Vision itself through
 `vision.read` / `vision.write`; Core has no image codec or image namespace.
 
-Geometry operations and morphology preserve the input tensor element type. `grayscale`, `blur`, `filter`, and `downsample_mean` use one public name across the `tensor<uint8>` image path and differentiable floating paths; Quidra's generic specialization resolves the dtype-specific implementation statically. `threshold` uses the same public name across the `tensor<uint8>` and floating paths. Because thresholding is discontinuous, tracked floating input is rejected rather than implicitly detached; untracked floating input is processed normally without creating an autograd graph.
+Geometry operations and morphology preserve the input tensor element type. `grayscale`, `blur`, `filter`, and `downsample_mean` use one public name across the `tensor<nat8>` image path and differentiable floating paths; Quidra's generic specialization resolves the dtype-specific implementation statically. `threshold` uses the same public name across the `tensor<nat8>` and floating paths. Because thresholding is discontinuous, tracked floating input is rejected rather than implicitly detached; untracked floating input is processed normally without creating an autograd graph.
 
 Invalid shapes or parameters are returned as `error`; they are never silently
 reinterpreted. This includes zero-size resize targets, out-of-bounds crops,
@@ -49,16 +49,16 @@ import vision
 | `write` | `write<T: numeric>(string path, tensor<T> pixels, int quality = 90) -> void \| error` |
 | `crop` | `crop<T>(tensor<T> pixels, int top, int left, int height, int width) -> tensor<T> \| error` |
 | `resize` | `resize<T>(tensor<T> pixels, int height, int width) -> tensor<T> \| error` |
-| `downsample_mean` | `downsample_mean(tensor<uint8> pixels, int factor) -> tensor<uint8> \| error`; `downsample_mean<T: floating>(tensor<T> pixels, int factor) -> tensor<T> \| error` |
+| `downsample_mean` | `downsample_mean(tensor<nat8> pixels, int factor) -> tensor<nat8> \| error`; `downsample_mean<T: floating>(tensor<T> pixels, int factor) -> tensor<T> \| error` |
 | `flip_horizontal` | `flip_horizontal<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `flip_vertical` | `flip_vertical<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `rotate90` | `rotate90<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `rotate180` | `rotate180<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `rotate270` | `rotate270<T>(tensor<T> pixels) -> tensor<T> \| error` |
-| `grayscale` | `grayscale(tensor<uint8> pixels) -> tensor<uint8> \| error`; `grayscale<T: floating>(tensor<T> pixels) -> tensor<T> \| error` |
-| `threshold` | `threshold(tensor<uint8> pixels, uint8 cutoff, uint8 low = uint8(0), uint8 high = uint8(255)) -> tensor<uint8> \| error`; `threshold<T: floating>(tensor<T> pixels, T cutoff, T low = 0.0, T high = 1.0) -> tensor<T> \| error` |
-| `blur` | `blur(tensor<uint8> pixels, int radius = 1) -> tensor<uint8> \| error`; `blur<T: floating>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
-| `filter` | `filter(tensor<uint8> pixels, tensor<int> kernel, int divisor = 1, int offset = 0) -> tensor<uint8> \| error`; `filter<T: floating, K: floating>(tensor<T> pixels, tensor<K> kernel, K divisor = 1.0, K offset = 0.0) -> tensor<T> \| error` |
+| `grayscale` | `grayscale(tensor<nat8> pixels) -> tensor<nat8> \| error`; `grayscale<T: floating>(tensor<T> pixels) -> tensor<T> \| error` |
+| `threshold` | `threshold(tensor<nat8> pixels, nat8 cutoff, nat8 low = nat8(0), nat8 high = nat8(255)) -> tensor<nat8> \| error`; `threshold<T: floating>(tensor<T> pixels, T cutoff, T low = 0.0, T high = 1.0) -> tensor<T> \| error` |
+| `blur` | `blur(tensor<nat8> pixels, int radius = 1) -> tensor<nat8> \| error`; `blur<T: floating>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
+| `filter` | `filter(tensor<nat8> pixels, tensor<int64> kernel, int divisor = 1, int offset = 0) -> tensor<nat8> \| error`; `filter<T: floating, K: floating>(tensor<T> pixels, tensor<K> kernel, K divisor = 1.0, K offset = 0.0) -> tensor<T> \| error` |
 | `dilate` | `dilate<T>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
 | `erode` | `erode<T>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
 
@@ -76,10 +76,10 @@ their own element type in one fixed order - every row of the block left to
 right, then the row sums top to bottom - and divide once by `factor * factor`;
 the native CPU and Metal kernels and the portable composition all use that
 order. The CPU and Metal kernels give bit-identical results for normal-range
-`float32` values, infinities and NaN, including for views and gradients; Metal
-flushes subnormal `float32` inputs and results to zero, where the CPU kernel
-keeps them. `tensor<uint8>` blocks are summed exactly and the quotient is truncated,
-as in the `uint8` `blur`. The block mean is linear, so tracked floating input
+`real32` values, infinities and NaN, including for views and gradients; Metal
+flushes subnormal `real32` inputs and results to zero, where the CPU kernel
+keeps them. `tensor<nat8>` blocks are summed exactly and the quotient is truncated,
+as in the `nat8` `blur`. The block mean is linear, so tracked floating input
 stays tracked: backward spreads each output gradient evenly over its block
 (ignored samples receive zero), and `backward(track = true)` keeps that gradient
 differentiable for higher-order derivatives.
@@ -92,13 +92,13 @@ only relocate samples and therefore preserve the element type exactly.
 `grayscale` accepts one, three, or four channels and returns one channel. For
 three- or four-channel input it combines RGB using the coefficients
 `0.299 * R + 0.587 * G + 0.114 * B` in floating-point and rounds only the final
-luminance to `uint8`; an alpha channel is intentionally ignored rather than
+luminance to `nat8`; an alpha channel is intentionally ignored rather than
 silently mixed into luminance.
 
 `threshold` writes `high` where the value is greater than or equal to `cutoff`
-and `low` elsewhere. `filter` accepts a non-empty rank-2 `tensor<int>` kernel, divides
+and `low` elsewhere. `filter` accepts a non-empty rank-2 `tensor<int64>` kernel, divides
 the accumulated sum by a nonzero `divisor`, adds `offset`, and clamps the result
-to the `uint8` range. `blur` averages the window. `dilate` takes the maximum and
+to the `nat8` range. `blur` averages the window. `dilate` takes the maximum and
 `erode` takes the minimum while preserving the source element type. Every window
 operation shrinks the window at the border rather than inventing padded values,
 and `crop` requires the requested rectangle to lie inside the image.
@@ -109,8 +109,8 @@ Vision uses Quidra's tensor placement semantics directly. Image decoding through
 data to a GPU is always an explicit caller action:
 
 ```quidra
-tensor<uint8> image_cpu = vision.read<uint8>("input.png")
-tensor<uint8> image_gpu = image_cpu.gpu(0)
+tensor<nat8> image_cpu = vision.read<nat8>("input.png")
+tensor<nat8> image_gpu = image_cpu.gpu(0)
 ```
 
 Vision never moves an input to CPU or GPU implicitly. Tensor geometry
@@ -118,7 +118,7 @@ Vision never moves an input to CPU or GPU implicitly. Tensor geometry
 morphology preserve the caller's device. Portable and differentiable paths use
 Core's generic tensor/autograd primitives; Vision may replace domain operations
 with package-owned native kernels when the device/layout contract matches. The
-current untracked contiguous CPU `uint8` filter path uses
+current untracked contiguous CPU `nat8` filter path uses
 `native/vision_native.cpp` through Core's opaque native-extension ABI.
 `downsample_mean` has Vision-owned CPU kernels (`native/vision_native.cpp`) and
 Metal kernels (`native/vision_metal.mm`) with Vision-owned autograd for tracked

@@ -1,14 +1,14 @@
 // Private Vision native bridge. Tensor values cross only as explicit
 // call-scoped borrows; native code treats their handles as opaque.
 extern int32 filter_u8(
-    const tensor<uint8> &pixels,
-    const tensor<int> &kernel,
-    tensor<uint8> &output,
-    int divisor,
-    int offset
+    const tensor<nat8> &pixels,
+    const tensor<int64> &kernel,
+    tensor<nat8> &output,
+    int64 divisor,
+    int64 offset
 ) = "vision_native_filter_u8"
 
-// Block-mean downsampling. One ABI-identical symbol serves the uint8 and
+// Block-mean downsampling. One ABI-identical symbol serves the nat8 and
 // floating specializations; the native side dispatches on dtype and backend
 // and attaches Vision-owned autograd to tracked floating input. Nonzero
 // statuses are native/vision_native.cpp BlockStatus values; the caller maps
@@ -16,23 +16,23 @@ extern int32 filter_u8(
 extern int32 downsample_mean<T: numeric>(
     const tensor<T> &pixels,
     tensor<T> &output,
-    int factor
+    int64 factor
 ) = "vision_native_downsample_mean"
 
 // Package-owned image codec bridge. Generic tensor externs specialize in Quidra
 // while sharing one ABI-identical C symbol; the native side inspects only the
 // public opaque tensor ABI.
-extern uint64 image_open(const string &path, int channels) = "vision_native_image_open"
-extern int image_channels(uint64 handle) = "vision_native_image_channels"
-extern int image_height(uint64 handle) = "vision_native_image_height"
-extern int image_width(uint64 handle) = "vision_native_image_width"
+extern nat64 image_open(const string &path, int64 channels) = "vision_native_image_open"
+extern int64 image_channels(nat64 handle) = "vision_native_image_channels"
+extern int64 image_height(nat64 handle) = "vision_native_image_height"
+extern int64 image_width(nat64 handle) = "vision_native_image_width"
 extern int32 image_fill<T: numeric>(
-    uint64 handle,
+    nat64 handle,
     tensor<T> &output
 ) = "vision_native_image_fill"
-extern void image_close(uint64 handle) = "vision_native_image_close"
+extern void image_close(nat64 handle) = "vision_native_image_close"
 extern int32 image_write<T: numeric>(
     const string &path,
     const tensor<T> &pixels,
-    int quality
+    int64 quality
 ) = "vision_native_image_write"
