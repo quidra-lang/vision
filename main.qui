@@ -625,8 +625,8 @@ tensor<T> | error filter<T: floating, K: floating>(
 tensor<nat8> | error filter(
     tensor<nat8> pixels,
     tensor<int64> kernel,
-    int divisor = 1,
-    int offset = 0
+    int64 divisor = 1,
+    int64 offset = 0
 )
     if pixels.is_tracked()
         return error("vision.filter cannot operate on a tracked tensor; call untrack() explicitly")
