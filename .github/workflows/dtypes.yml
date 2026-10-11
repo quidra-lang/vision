@@ -30,6 +30,6 @@ jobs:
       - name: Install Quidra dependencies
         run: sudo apt-get update && sudo apt-get install -y ccache llvm pkg-config libcurl4-openssl-dev libpng-dev libjpeg-dev libtiff-dev libwebp-dev
       - name: Build Quidra
-        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel
+        run: cmake -S quidra -B quidra/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && cmake --build quidra/build --parallel ${{ runner.os == 'macOS' && 3 || 4 }}
       - name: Vision dtype tests
         run: bash tests/dtypes.sh "$GITHUB_WORKSPACE/quidra/build/quidra"
