@@ -621,4 +621,5 @@ if [[ "${thread_outputs[0]}" != "${thread_outputs[1]}" || "${thread_outputs[0]}"
     exit 1
 fi
 
+bash "$REPOSITORY_ROOT/tests/nonfinite.sh" "$QUIDRA"
 echo "vision integration: ok"

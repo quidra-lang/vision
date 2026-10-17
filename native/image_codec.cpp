@@ -1102,7 +1102,7 @@ extern "C" long long vision_native_image_width(std::uint64_t handle) {
 
 extern "C" std::int32_t vision_native_image_fill(
     std::uint64_t handle, void* output) {
-    std::uint32_t nonfinite = 0;
+    std::uint32_t nan_result = 0;
     try {
         if (qcore_native_abi_version() != QUIDRA_NATIVE_ABI_VERSION)
             return 1;
@@ -1126,16 +1126,16 @@ extern "C" std::int32_t vision_native_image_fill(
             std::memcpy(destination, converted.chw.data(), converted.chw.size());
         if (output_dtype == dtype_float32) {
             for (std::size_t i = 0; i < converted.chw.size(); i += sizeof(float))
-                nonfinite |= !std::isfinite(read_sample<float>(converted.chw.data() + i));
+                nan_result |= std::isnan(read_sample<float>(converted.chw.data() + i));
         } else if (output_dtype == dtype_float64) {
             for (std::size_t i = 0; i < converted.chw.size(); i += sizeof(double))
-                nonfinite |= !std::isfinite(read_sample<double>(converted.chw.data() + i));
+                nan_result |= std::isnan(read_sample<double>(converted.chw.data() + i));
         }
     } catch (...) {
         return 6;
     }
     // The Node failure bridge must propagate outside the codec's catch.
-    qcore_tensor_report_status(output, "vision.read", nonfinite);
+    qcore_tensor_report_status(output, "vision.read", nan_result);
     return 0;
 }
 
