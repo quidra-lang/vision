@@ -34,7 +34,7 @@ namespace {
 // Tensor dtype codes come only from Core's public opaque native-extension ABI.
 struct OperationFlags {
     OperationFlags() {
-        qcore_op_register_flags("vision_native_image_fill", QCORE_OP_VALIDATES_NONFINITE);
+        qcore_op_register_flags("vision_native_image_fill", QCORE_OP_VALIDATES_NAN);
     }
 };
 const OperationFlags operation_flags;

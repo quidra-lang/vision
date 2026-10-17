@@ -86,7 +86,7 @@ kernel void vision_block_mean_f32(
     }
     const float value = total / shape.divisor;
     output[index] = value;
-    if (!isfinite(value))
+    if ((as_type<uint>(value) & 0x7fffffffu) > 0x7f800000u)
         atomic_fetch_or_explicit(status, 1u, memory_order_relaxed);
 }
 
@@ -343,7 +343,7 @@ public:
         if (!taken_) return false;
         // Core consumes the slot on successful handoff only.
         if (qcore_device_defer_status(device_, slot_,
-                "package operation vision.downsample_mean produced a non-finite real32 value") == 0) {
+                "package operation vision.downsample_mean produced a NaN real32 value") == 0) {
             taken_ = false;
             return true;
         }
