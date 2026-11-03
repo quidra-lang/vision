@@ -22,7 +22,7 @@ match loaded
         int | error transformed := transform_image(pixels)
         match transformed
             int
-                int ignored := transformed
+                ignored := transformed
             error problem
                 print.line(problem)
     error problem

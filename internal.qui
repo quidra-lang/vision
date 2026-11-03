@@ -3,32 +3,32 @@ tensor<T> convolve2d<T: numeric>(
     tensor<T> kernel,
     int padding
 )
-    int[] shape := int(pixels.shape())
-    int height_axis := int(len(shape)) - 2
-    int width_axis := int(len(shape)) - 1
-    int height := shape[height_axis]
-    int width := shape[width_axis]
-    int[] kernel_shape := int(kernel.shape())
-    int kernel_height := kernel_shape[0]
-    int kernel_width := kernel_shape[1]
+    shape := int(pixels.shape())
+    height_axis := int(len(shape)) - 2
+    width_axis := int(len(shape)) - 1
+    height := shape[height_axis]
+    width := shape[width_axis]
+    kernel_shape := int(kernel.shape())
+    kernel_height := kernel_shape[0]
+    kernel_width := kernel_shape[1]
 
     int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
 
-    int padded_height := height + padding * 2
-    int padded_width := width + padding * 2
-    int[] padded_shape := shape
+    padded_height := height + padding * 2
+    padded_width := width + padding * 2
+    padded_shape := shape
     padded_shape[height_axis] = padded_height
     padded_shape[width_axis] = padded_width
 
-    int input_count := planes * height * width
+    input_count := planes * height * width
     int[] padded_indices := array(nat(input_count), fill = 0)
     for 0 <= int flat_index < input_count
-        int x := flat_index % width
-        int remaining := flat_index / width
-        int y := remaining % height
-        int plane := remaining / height
+        x := flat_index % width
+        remaining := flat_index / width
+        y := remaining % height
+        plane := remaining / height
         padded_indices[flat_index] = (
             (plane * padded_height + padding + y) * padded_width
             + padding + x
@@ -36,39 +36,39 @@ tensor<T> convolve2d<T: numeric>(
 
     // Core supplies only tensor/autograd substrate. Vision owns the image-domain
     // patch mapping and the convolution contraction itself.
-    tensor<T> padded := pixels.scatter(padded_indices, padded_shape)
+    padded := pixels.scatter(padded_indices, padded_shape)
 
-    int output_height := padded_height - kernel_height + 1
-    int output_width := padded_width - kernel_width + 1
-    int kernel_count := kernel_height * kernel_width
-    int patch_rows := planes * output_height * output_width
-    int patch_count := patch_rows * kernel_count
+    output_height := padded_height - kernel_height + 1
+    output_width := padded_width - kernel_width + 1
+    kernel_count := kernel_height * kernel_width
+    patch_rows := planes * output_height * output_width
+    patch_count := patch_rows * kernel_count
     int[] patch_indices := array(nat(patch_count), fill = 0)
 
     for 0 <= int flat_index < patch_count
-        int patch_column := flat_index % kernel_count
-        int patch_row := flat_index / kernel_count
+        patch_column := flat_index % kernel_count
+        patch_row := flat_index / kernel_count
 
-        int kernel_x := patch_column % kernel_width
-        int kernel_y := patch_column / kernel_width
-        int source_kernel_x := kernel_width - 1 - kernel_x
-        int source_kernel_y := kernel_height - 1 - kernel_y
+        kernel_x := patch_column % kernel_width
+        kernel_y := patch_column / kernel_width
+        source_kernel_x := kernel_width - 1 - kernel_x
+        source_kernel_y := kernel_height - 1 - kernel_y
 
-        int output_x := patch_row % output_width
-        int output_remaining := patch_row / output_width
-        int output_y := output_remaining % output_height
-        int plane := output_remaining / output_height
+        output_x := patch_row % output_width
+        output_remaining := patch_row / output_width
+        output_y := output_remaining % output_height
+        plane := output_remaining / output_height
 
-        int source_y := output_y + source_kernel_y
-        int source_x := output_x + source_kernel_x
+        source_y := output_y + source_kernel_y
+        source_x := output_x + source_kernel_x
         patch_indices[flat_index] = (
             (plane * padded_height + source_y) * padded_width + source_x
         )
 
-    tensor<T> patches := padded.gather(
+    patches := padded.gather(
         patch_indices, [patch_rows, kernel_count]
     )
-    tensor<T> flat_kernel := kernel.reshape([nat(kernel_count)])
+    flat_kernel := kernel.reshape([nat(kernel_count)])
 
     // Contract each patch row with the kernel using only domain-neutral tensor
     // primitives. This keeps Vision independent of Core linear algebra while
@@ -77,15 +77,15 @@ tensor<T> convolve2d<T: numeric>(
     int[] first_kernel_indices := array(nat(patch_rows), fill = 0)
     for 0 <= int patch_row < patch_rows
         first_patch_indices[patch_row] = patch_row * kernel_count
-    tensor<T> result := (
+    result := (
         patches.gather(first_patch_indices, [patch_rows])
         * flat_kernel.gather(first_kernel_indices, [patch_rows])
     )
 
     for 0 <= int remaining_column < kernel_count - 1
-        int patch_column := remaining_column + 1
+        patch_column := remaining_column + 1
         int[] column_patch_indices := array(nat(patch_rows), fill = 0)
-        int[] column_kernel_indices := array(nat(patch_rows), fill = patch_column)
+        column_kernel_indices := array(nat(patch_rows), fill = patch_column)
         for 0 <= int patch_row < patch_rows
             column_patch_indices[patch_row] = (
                 patch_row * kernel_count + patch_column
@@ -95,7 +95,7 @@ tensor<T> convolve2d<T: numeric>(
             * flat_kernel.gather(column_kernel_indices, [patch_rows])
         )
 
-    int[] output_shape := shape
+    output_shape := shape
     output_shape[height_axis] = output_height
     output_shape[width_axis] = output_width
     return result.reshape(nat(output_shape))
@@ -116,28 +116,28 @@ tensor<T> native_output<T: numeric>(int[] shape, int device)
 // native kernels use - and trailing rows/columns outside every block are never
 // read.
 tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
-    int[] shape := int(pixels.shape())
-    int height_axis := int(len(shape)) - 2
-    int width_axis := int(len(shape)) - 1
-    int height := shape[height_axis]
-    int width := shape[width_axis]
-    int output_height := height / factor
-    int output_width := width / factor
-    int covered_height := output_height * factor
+    shape := int(pixels.shape())
+    height_axis := int(len(shape)) - 2
+    width_axis := int(len(shape)) - 1
+    height := shape[height_axis]
+    width := shape[width_axis]
+    output_height := height / factor
+    output_width := width / factor
+    covered_height := output_height * factor
     int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
 
     // Horizontal pass: [planes, covered_height, output_width] run sums.
-    int run_count := planes * covered_height * output_width
+    run_count := planes * covered_height * output_width
     int[] run_starts := array(nat(run_count), fill = 0)
     for 0 <= int flat_index < run_count
-        int ox := flat_index % output_width
-        int remaining := flat_index / output_width
-        int y := remaining % covered_height
-        int plane := remaining / covered_height
+        ox := flat_index % output_width
+        remaining := flat_index / output_width
+        y := remaining % covered_height
+        plane := remaining / covered_height
         run_starts[flat_index] = (plane * height + y) * width + ox * factor
-    tensor<T> runs := pixels.gather(run_starts, [run_count])
+    runs := pixels.gather(run_starts, [run_count])
     int[] run_indices := array(nat(run_count), fill = 0)
     for 1 <= int dx < factor
         for 0 <= int flat_index < run_count
@@ -145,20 +145,20 @@ tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
         runs = runs + pixels.gather(run_indices, [run_count])
 
     // Vertical pass over the run sums of each block.
-    int[] output_shape := shape
+    output_shape := shape
     output_shape[height_axis] = output_height
     output_shape[width_axis] = output_width
-    int output_count := planes * output_height * output_width
+    output_count := planes * output_height * output_width
     int[] block_tops := array(nat(output_count), fill = 0)
     for 0 <= int flat_index < output_count
-        int ox := flat_index % output_width
-        int remaining := flat_index / output_width
-        int oy := remaining % output_height
-        int plane := remaining / output_height
+        ox := flat_index % output_width
+        remaining := flat_index / output_width
+        oy := remaining % output_height
+        plane := remaining / output_height
         block_tops[flat_index] = (
             (plane * covered_height + oy * factor) * output_width + ox
         )
-    tensor<T> total := runs.gather(block_tops, output_shape)
+    total := runs.gather(block_tops, output_shape)
     int[] block_rows := array(nat(output_count), fill = 0)
     for 1 <= int dy < factor
         for 0 <= int flat_index < output_count
@@ -170,7 +170,7 @@ tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
 T block_size<T: floating>(int count)
     T result := 0.0
     T power := 1.0
-    int remaining := count
+    remaining := count
     while remaining > 0
         if remaining % 2 == 1
             result = result + power
@@ -207,16 +207,16 @@ tensor<T> block_mean<T: floating>(tensor<T> pixels, int factor)
 
 // Portable nat8 block mean: exact integer block sums, truncating quotient.
 tensor<nat8> | error block_mean_u8(tensor<nat8> pixels, int factor)
-    tensor<int64> totals := block_sum<int64>(int64(pixels), factor)
-    int64 fixed_factor := int64(factor)
-    tensor<nat8> means := try nat8(totals / (fixed_factor * fixed_factor))
+    totals := block_sum<int64>(int64(pixels), factor)
+    fixed_factor := int64(factor)
+    means := try nat8(totals / (fixed_factor * fixed_factor))
     return means
 
 // A contiguous copy of a tracked view in its logical element order. Core's
 // contiguous() requires an untracked tensor, so the copy is one Core gather,
 // which keeps the autograd graph and stays on the input device.
 tensor<T> dense_copy<T: numeric>(tensor<T> pixels)
-    int[] copy_shape := int(pixels.shape())
+    copy_shape := int(pixels.shape())
     int element_count := 1
     for axis_extent := copy_shape[]
         element_count = element_count * axis_extent

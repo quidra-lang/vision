@@ -111,8 +111,8 @@ Vision uses Quidra's tensor placement semantics directly. Image decoding through
 data to a GPU is always an explicit caller action:
 
 ```quidra
-tensor<nat8> image_cpu := vision.read<nat8>("input.png")
-tensor<nat8> image_gpu := image_cpu.gpu(0)
+image_cpu := vision.read<nat8>("input.png")
+image_gpu := image_cpu.gpu(0)
 ```
 
 Vision never moves an input to CPU or GPU implicitly. Tensor geometry
