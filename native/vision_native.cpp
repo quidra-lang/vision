@@ -23,8 +23,8 @@ namespace {
 
 struct OperationFlags {
     OperationFlags() {
-        qcore_op_register_flags("vision_native_filter_u8", QCORE_OP_FINITE_PRESERVING);
-        qcore_op_register_flags("vision_native_downsample_mean", QCORE_OP_VALIDATES_NONFINITE);
+        qcore_op_register_flags("vision_native_filter_u8", QCORE_OP_NAN_PRESERVING);
+        qcore_op_register_flags("vision_native_downsample_mean", QCORE_OP_VALIDATES_NAN);
     }
 };
 const OperationFlags operation_flags;
@@ -435,7 +435,7 @@ bool block_mean_row(
             const T value = finish(totals[ox - first]);
             destination[ox] = value;
             if constexpr (std::is_floating_point_v<T>)
-                nonfinite |= !std::isfinite(value);
+                nonfinite |= std::isnan(value);
         }
     }
     return nonfinite;

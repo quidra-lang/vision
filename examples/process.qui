@@ -11,8 +11,7 @@ int | error transform_image(tensor<nat8> pixels)
     auto | error written = vision.write("output.png", edges)
     match written
         void
-            print("saved")
-            print(NL)
+            print.line("saved")
         error problem
             return problem
     return 0
@@ -25,8 +24,6 @@ match loaded
             int
                 int ignored = transformed
             error problem
-                print(problem)
-                print(NL)
+                print.line(problem)
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)

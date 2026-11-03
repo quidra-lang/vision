@@ -20,20 +20,13 @@ int | error run()
     pixels[0, 1, 1] = nat8(200)
     try vision.write("$TMP/roundtrip.bmp", pixels)
     tensor<nat8> decoded = try vision.read<nat8>("$TMP/roundtrip.bmp", channels = 3)
-    print(decoded.shape()[0] == 3)
-    print(NL)
-    print(decoded.shape()[1] == 2)
-    print(NL)
-    print(decoded.shape()[2] == 2)
-    print(NL)
-    print(decoded[0, 0, 0].item() == nat8(10))
-    print(NL)
-    print(decoded[1, 0, 0].item() == nat8(20))
-    print(NL)
-    print(decoded[2, 0, 0].item() == nat8(30))
-    print(NL)
-    print(decoded[0, 1, 1].item() == nat8(200))
-    print(NL)
+    print.line(decoded.shape()[0] == 3)
+    print.line(decoded.shape()[1] == 2)
+    print.line(decoded.shape()[2] == 2)
+    print.line(decoded[0, 0, 0].item() == nat8(10))
+    print.line(decoded[1, 0, 0].item() == nat8(20))
+    print.line(decoded[2, 0, 0].item() == nat8(30))
+    print.line(decoded[0, 1, 1].item() == nat8(200))
     return 0
 
 auto | error result = run()
@@ -41,8 +34,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 image_io_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/image-io.qui")"
@@ -72,26 +64,16 @@ int | error run()
     tensor<nat8> gray = try vision.grayscale(pixels)
     tensor<nat8> binary = try vision.threshold(pixels, cutoff = nat8(8))
 
-    print(cropped.shape()[2])
-    print(NL)
-    print(cropped[0, 0, 0].item())
-    print(NL)
-    print(resized.shape()[1])
-    print(NL)
-    print(resized.shape()[2])
-    print(NL)
-    print(flipped[0, 0, 0].item())
-    print(NL)
-    print(rotated.shape()[1])
-    print(NL)
-    print(rotated.shape()[2])
-    print(NL)
-    print(gray.shape()[0])
-    print(NL)
-    print(binary[0, 0, 0].item())
-    print(NL)
-    print(binary[2, 1, 2].item())
-    print(NL)
+    print.line(cropped.shape()[2])
+    print.line(cropped[0, 0, 0].item())
+    print.line(resized.shape()[1])
+    print.line(resized.shape()[2])
+    print.line(flipped[0, 0, 0].item())
+    print.line(rotated.shape()[1])
+    print.line(rotated.shape()[2])
+    print.line(gray.shape()[0])
+    print.line(binary[0, 0, 0].item())
+    print.line(binary[2, 1, 2].item())
     return 0
 
 auto | error result = run()
@@ -99,8 +81,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/use-vision.qui")"
@@ -131,20 +112,13 @@ int | error run()
     directional_kernel[0, 0] = 1
     tensor<nat8> directional = try vision.filter(line, directional_kernel)
 
-    print(blurred[0, 1, 1].item())
-    print(NL)
-    print(blurred[0, 0, 0].item())
-    print(NL)
-    print(expanded[0, 0, 0].item())
-    print(NL)
-    print(contracted[0, 1, 1].item())
-    print(NL)
-    print(filtered[0, 1, 1].item())
-    print(NL)
-    print(directional[0, 0, 0].item())
-    print(NL)
-    print(directional[0, 0, 2].item())
-    print(NL)
+    print.line(blurred[0, 1, 1].item())
+    print.line(blurred[0, 0, 0].item())
+    print.line(expanded[0, 0, 0].item())
+    print.line(contracted[0, 1, 1].item())
+    print.line(filtered[0, 1, 1].item())
+    print.line(directional[0, 0, 0].item())
+    print.line(directional[0, 0, 2].item())
     return 0
 
 auto | error result = run()
@@ -152,8 +126,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 filters_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/filters.qui")"
@@ -179,20 +152,13 @@ int | error run()
     tensor<nat8> turned270 = try vision.rotate270(pixels)
     tensor<nat8> mirrored = try vision.flip_vertical(pixels)
 
-    print(turned90[0, 0, 0].item())
-    print(NL)
-    print(turned90[0, 2, 1].item())
-    print(NL)
-    print(turned180[0, 0, 0].item())
-    print(NL)
-    print(turned180[0, 1, 2].item())
-    print(NL)
-    print(turned270[0, 0, 0].item())
-    print(NL)
-    print(turned270[0, 2, 1].item())
-    print(NL)
-    print(mirrored[0, 0, 0].item())
-    print(NL)
+    print.line(turned90[0, 0, 0].item())
+    print.line(turned90[0, 2, 1].item())
+    print.line(turned180[0, 0, 0].item())
+    print.line(turned180[0, 1, 2].item())
+    print.line(turned270[0, 0, 0].item())
+    print.line(turned270[0, 2, 1].item())
+    print.line(mirrored[0, 0, 0].item())
 
     tensor<nat8> after270 = try vision.rotate270(pixels)
     tensor<nat8> full_turn = try vision.rotate90(after270)
@@ -205,8 +171,7 @@ int | error run()
                 differences += 1
             if half_turn[0, y, x].item() != turned180[0, y, x].item()
                 differences += 1
-    print(differences)
-    print(NL)
+    print.line(differences)
     return 0
 
 auto | error result = run()
@@ -214,8 +179,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 rotations_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/rotations.qui")"
@@ -236,12 +200,9 @@ int | error run()
     rgb[1, 0, 0, 0] = nat8(255)
     tensor<nat8> gray = try vision.grayscale(rgb)
     int[] gray_shape = int(gray.shape())
-    print(len(gray_shape) == 4 and gray_shape[0] == 2 and gray_shape[1] == 1)
-    print(NL)
-    print(gray[0, 0, 0, 0].item() == nat8(141))
-    print(NL)
-    print(gray[1, 0, 0, 0].item() == nat8(76))
-    print(NL)
+    print.line(len(gray_shape) == 4 and gray_shape[0] == 2 and gray_shape[1] == 1)
+    print.line(gray[0, 0, 0, 0].item() == nat8(141))
+    print.line(gray[1, 0, 0, 0].item() == nat8(76))
 
     tensor<nat8> stack = tensor.zeros<nat8>([1, 2, 1, 2, 2])
     stack[0, 0, 0, 0, 0] = nat8(10)
@@ -250,14 +211,10 @@ int | error run()
     tensor<nat8> thresholded = try vision.threshold(
         stack, nat8(128), low = nat8(3), high = nat8(9)
     )
-    print(thresholded.shape()[1] == 2)
-    print(NL)
-    print(thresholded[0, 0, 0, 0, 0].item() == nat8(3))
-    print(NL)
-    print(thresholded[0, 0, 0, 0, 1].item() == nat8(9))
-    print(NL)
-    print(thresholded[0, 1, 0, 1, 1].item() == nat8(9))
-    print(NL)
+    print.line(thresholded.shape()[1] == 2)
+    print.line(thresholded[0, 0, 0, 0, 0].item() == nat8(3))
+    print.line(thresholded[0, 0, 0, 0, 1].item() == nat8(9))
+    print.line(thresholded[0, 1, 0, 1, 1].item() == nat8(9))
 
     tensor<real32> floating = tensor.zeros<real32>([1, 1, 1, 3])
     floating[0, 0, 0, 0] = real32(0.25)
@@ -266,40 +223,29 @@ int | error run()
     tensor<real32> floating_thresholded = try vision.threshold(
         floating, real32(0.5), low = real32(-1.0), high = real32(2.0)
     )
-    print(floating_thresholded[0, 0, 0, 0].item() == real32(-1.0))
-    print(NL)
-    print(floating_thresholded[0, 0, 0, 1].item() == real32(2.0))
-    print(NL)
-    print(floating_thresholded[0, 0, 0, 2].item() == real32(2.0))
-    print(NL)
+    print.line(floating_thresholded[0, 0, 0, 0].item() == real32(-1.0))
+    print.line(floating_thresholded[0, 0, 0, 1].item() == real32(2.0))
+    print.line(floating_thresholded[0, 0, 0, 2].item() == real32(2.0))
 
     tensor<nat8> images = tensor.zeros<nat8>([2, 1, 3, 3])
     images[0, 0, 1, 1] = nat8(255)
     images[1, 0, 0, 0] = nat8(90)
     tensor<nat8> blurred = try vision.blur(images, radius = 1)
-    print(blurred.shape()[0] == 2 and blurred.shape()[1] == 1)
-    print(NL)
-    print(blurred[0, 0, 1, 1].item() == nat8(28))
-    print(NL)
-    print(blurred[1, 0, 2, 2].item() == nat8(0))
-    print(NL)
+    print.line(blurred.shape()[0] == 2 and blurred.shape()[1] == 1)
+    print.line(blurred[0, 0, 1, 1].item() == nat8(28))
+    print.line(blurred[1, 0, 2, 2].item() == nat8(0))
 
     tensor<int64> identity = tensor.zeros<int64>([1, 1])
     identity[0, 0] = 1
     tensor<nat8> filtered = try vision.filter(images, identity)
-    print(filtered[0, 0, 1, 1].item() == nat8(255))
-    print(NL)
-    print(filtered[1, 0, 0, 0].item() == nat8(90))
-    print(NL)
+    print.line(filtered[0, 0, 1, 1].item() == nat8(255))
+    print.line(filtered[1, 0, 0, 0].item() == nat8(90))
 
     tensor<nat8> expanded = try vision.dilate(stack, radius = 1)
     tensor<nat8> contracted = try vision.erode(stack, radius = 1)
-    print(expanded.shape()[0] == 1 and expanded.shape()[1] == 2)
-    print(NL)
-    print(expanded[0, 0, 0, 1, 0].item() == nat8(200))
-    print(NL)
-    print(contracted[0, 0, 0, 0, 1].item() == nat8(0))
-    print(NL)
+    print.line(expanded.shape()[0] == 1 and expanded.shape()[1] == 2)
+    print.line(expanded[0, 0, 0, 1, 0].item() == nat8(200))
+    print.line(contracted[0, 0, 0, 0, 1].item() == nat8(0))
     return 0
 
 auto | error result = run()
@@ -307,8 +253,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 leading_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/leading-dimensions.qui")"
@@ -391,13 +336,11 @@ int | error run()
     for auto factor = factors[]
         total_mismatches += mismatches(image, try vision.downsample_mean(image, factor), factor)
         total_mismatches += mismatches(batch, try vision.downsample_mean(batch, factor), factor)
-    print(total_mismatches)
-    print(NL)
+    print.line(total_mismatches)
 
     tensor<real32> reduced = try vision.downsample_mean(image, 3)
     int[] reduced_shape = int(reduced.shape())
-    print(len(reduced_shape) == 3 and reduced_shape[0] == 3 and reduced_shape[1] == 3 and reduced_shape[2] == 4)
-    print(NL)
+    print.line(len(reduced_shape) == 3 and reduced_shape[0] == 3 and reduced_shape[1] == 3 and reduced_shape[2] == 4)
 
     // Samples outside every complete block never contribute.
     tensor<real32> edited = image.reshape([3 * 11 * 14])
@@ -407,25 +350,21 @@ int | error run()
         for 0 <= nat x < 14
             edited[(c * 11 + 10) * 14 + x] = real32(-1000)
     tensor<real32> edited_reduced = try vision.downsample_mean(edited.reshape([3, 11, 14]), 3)
-    print(mismatches(image, edited_reduced, 3))
-    print(NL)
+    print.line(mismatches(image, edited_reduced, 3))
 
     // factor 1 keeps every sample; a factor equal to the extent averages the
     // whole axis.
     tensor<real32> same = try vision.downsample_mean(image, 1)
-    print(mismatches(image, same, 1))
-    print(NL)
+    print.line(mismatches(image, same, 1))
     tensor<real32> column = try vision.downsample_mean(pattern([1, 4, 9]), 4)
-    print(column.shape()[1] == 1 and column.shape()[2] == 2)
-    print(NL)
+    print.line(column.shape()[1] == 1 and column.shape()[2] == 2)
 
     // Untracked non-contiguous views give the same result as their
     // contiguous copy.
     tensor<real32> transposed = pattern([3, 14, 11]).transpose(1, 2)
     tensor<real32> from_view = try vision.downsample_mean(transposed, 3)
     tensor<real32> from_copy = try vision.downsample_mean(transposed.contiguous(), 3)
-    print(transposed.is_contiguous() == false and mismatches(transposed.contiguous(), from_view, 3) == 0 and mismatches(transposed.contiguous(), from_copy, 3) == 0)
-    print(NL)
+    print.line(transposed.is_contiguous() == false and mismatches(transposed.contiguous(), from_view, 3) == 0 and mismatches(transposed.contiguous(), from_copy, 3) == 0)
 
     // A shrink built from gathers: the mean of factor x factor gathers over
     // the top-left blocks of an 8-bit image equals downsample_mean followed by
@@ -454,8 +393,7 @@ int | error run()
         for 0 <= int x < width
             if shrunk[0, y, x].item() != gathered[0, y, x].item()
                 shrink_differences += 1
-    print(shrink_differences)
-    print(NL)
+    print.line(shrink_differences)
 
     // nat8 sums exactly and truncates the quotient, like the nat8 blur.
     tensor<nat8> bytes = tensor.zeros<nat8>([1, 2, 5])
@@ -469,12 +407,9 @@ int | error run()
     bytes[0, 1, 3] = nat8(254)
     bytes[0, 0, 4] = nat8(200)
     tensor<nat8> small = try vision.downsample_mean(bytes, 2)
-    print(small.shape()[1] == 1 and small.shape()[2] == 2)
-    print(NL)
-    print(small[0, 0, 0].item())
-    print(NL)
-    print(small[0, 0, 1].item())
-    print(NL)
+    print.line(small.shape()[1] == 1 and small.shape()[2] == 2)
+    print.line(small[0, 0, 0].item())
+    print.line(small[0, 0, 1].item())
     return 0
 
 auto | error result = run()
@@ -482,8 +417,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample.qui")"
@@ -530,7 +464,7 @@ void sample32(string label, tensor<real32> value)
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
-        print("{label} {index} {flat[index].item()}{NL}")
+        print.line("{label} {index} {flat[index].item()}")
 
 void sample64(string label, tensor<real64> value)
     tensor<real64> flat = value.untrack().cpu().contiguous()
@@ -539,7 +473,7 @@ void sample64(string label, tensor<real64> value)
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
-        print("{label} {index} {flat[index].item()}{NL}")
+        print.line("{label} {index} {flat[index].item()}")
 
 void sample8(string label, tensor<nat8> value)
     tensor<nat8> flat = value.cpu().contiguous()
@@ -548,7 +482,7 @@ void sample8(string label, tensor<nat8> value)
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
-        print("{label} {index} {flat[index].item()}{NL}")
+        print.line("{label} {index} {flat[index].item()}")
 
 int | error run()
     // Factor 3 leaves a row and two columns outside every block, which the
@@ -592,15 +526,13 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 auto | error result64 = run64()
 match result64
     int
         int ignored = result64
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 thread_outputs=()
 for threads in 1 3 ""; do
@@ -621,4 +553,5 @@ if [[ "${thread_outputs[0]}" != "${thread_outputs[1]}" || "${thread_outputs[0]}"
     exit 1
 fi
 
+bash "$REPOSITORY_ROOT/tests/nonfinite.sh" "$QUIDRA"
 echo "vision integration: ok"

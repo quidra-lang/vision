@@ -18,10 +18,8 @@ int | error run()
     rgb[1, 0, 0] = nat8(255)
     rgb[2, 0, 1] = nat8(255)
     tensor<nat8> gray = try vision.grayscale(rgb)
-    print(gray[0, 0, 0].item())
-    print(NL)
-    print(gray[0, 0, 1].item())
-    print(NL)
+    print.line(gray[0, 0, 0].item())
+    print.line(gray[0, 0, 1].item())
 
     // Geometry only relocates samples, so it must preserve the source dtype.
     tensor<nat16> pixels = tensor.zeros<nat16>([1, 2, 2])
@@ -35,14 +33,10 @@ int | error run()
     tensor<nat16> flipped = try vision.flip_horizontal(pixels)
     tensor<nat16> turned = try vision.rotate90(pixels)
 
-    print(cropped[0, 1, 0].item())
-    print(NL)
-    print(resized[0, 3, 3].item())
-    print(NL)
-    print(flipped[0, 0, 0].item())
-    print(NL)
-    print(turned[0, 0, 1].item())
-    print(NL)
+    print.line(cropped[0, 1, 0].item())
+    print.line(resized[0, 3, 3].item())
+    print.line(flipped[0, 0, 0].item())
+    print.line(turned[0, 0, 1].item())
 
     // Morphology must not retain nat8-specific sentinels such as 0 or 255.
     tensor<int16> signed_pixels = tensor.zeros<int16>([1, 1, 3])
@@ -51,20 +45,16 @@ int | error run()
     signed_pixels[0, 0, 2] = int16(-20)
     tensor<int16> signed_dilated = try vision.dilate(signed_pixels, radius = 1)
     tensor<int16> signed_eroded = try vision.erode(signed_pixels, radius = 1)
-    print(signed_dilated[0, 0, 0].item())
-    print(NL)
-    print(signed_eroded[0, 0, 1].item())
-    print(NL)
+    print.line(signed_dilated[0, 0, 0].item())
+    print.line(signed_eroded[0, 0, 1].item())
 
     tensor<nat16> bright = tensor.zeros<nat16>([1, 1, 2])
     bright[0, 0, 0] = nat16(1000)
     bright[0, 0, 1] = nat16(2000)
     tensor<nat16> bright_dilated = try vision.dilate(bright, radius = 1)
     tensor<nat16> bright_eroded = try vision.erode(bright, radius = 1)
-    print(bright_dilated[0, 0, 0].item())
-    print(NL)
-    print(bright_eroded[0, 0, 1].item())
-    print(NL)
+    print.line(bright_dilated[0, 0, 0].item())
+    print.line(bright_eroded[0, 0, 1].item())
     return 0
 
 auto | error result = run()
@@ -72,8 +62,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-dtypes.qui")"
@@ -95,8 +84,7 @@ int | error run()
     bytes[0, 1, 0] = nat8(255)
     bytes[0, 1, 1] = nat8(254)
     tensor<nat8> small_bytes = try vision.downsample_mean(bytes, 2)
-    print(small_bytes[0, 0, 0].item())
-    print(NL)
+    print.line(small_bytes[0, 0, 0].item())
 
     tensor<real32> single = tensor.zeros<real32>([1, 2, 2])
     single[0, 0, 0] = real32(1)
@@ -104,8 +92,7 @@ int | error run()
     single[0, 1, 0] = real32(3)
     single[0, 1, 1] = real32(4.5)
     tensor<real32> small_single = try vision.downsample_mean(single, 2)
-    print(small_single[0, 0, 0].item() == real32(2.625))
-    print(NL)
+    print.line(small_single[0, 0, 0].item() == real32(2.625))
 
     tensor<real64> double = tensor.zeros<real64>([1, 1, 3, 3])
     double[0, 0, 0, 0] = 0.5
@@ -114,8 +101,7 @@ int | error run()
     double[0, 0, 1, 1] = 4.0
     double[0, 0, 2, 2] = 100.0
     tensor<real64> small_double = try vision.downsample_mean(double, 2)
-    print(small_double[0, 0, 0, 0].item() == 2.125)
-    print(NL)
+    print.line(small_double[0, 0, 0, 0].item() == 2.125)
 
     // The CPU kernel keeps subnormal real32 values: four equal subnormals
     // average to themselves exactly, and 1, 1, 2, 3 times the smallest
@@ -132,7 +118,7 @@ int | error run()
         tiny > real32(0.0) and small_subnormal[0, 0, 0].item() == tiny
         and small_subnormal[0, 0, 1].item() == smallest + smallest
     )
-    print(NL)
+    print.line()
     return 0
 
 auto | error result = run()
@@ -140,8 +126,7 @@ match result
     int
         int ignored = result
     error problem
-        print(problem)
-        print(NL)
+        print.line(problem)
 QUI
 
 downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-dtypes.qui")"

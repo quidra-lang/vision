@@ -205,7 +205,9 @@ Native floating block means validate their stored outputs in the kernel. CPU
 failures report `NONFINITE_RESULT`; Metal records a status word in the same
 kernel dispatch and reports the deferred `GPU_ASYNC` failure at the next
 synchronization boundary. Finite block sums keep the documented addition and
-division order. The floating image decoder also validates its copied output;
+division order. Valid signed infinities survive both native block means and floating TIFF decoding;
+indeterminate NaN outputs fail at their originating operation.
+The floating image decoder also validates its copied output;
 unsupported codec element types keep their existing decode error. Integer-only
 native filtering declares finite preservation. These declarations use Core's
 operation flags and avoid its separate output-validation fallback.
