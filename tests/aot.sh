@@ -12,12 +12,12 @@ cat > "$TMP/vision-aot.qui" <<QUI
 import vision
 
 int | error run()
-    tensor<nat8> pixels = tensor.zeros<nat8>([3, 1, 1])
+    tensor<nat8> pixels := tensor.zeros<nat8>([3, 1, 1])
     pixels[0, 0, 0] = nat8(11)
     pixels[1, 0, 0] = nat8(22)
     pixels[2, 0, 0] = nat8(33)
     try vision.write("$TMP/roundtrip.png", pixels)
-    tensor<nat8> decoded = try vision.read<nat8>(
+    tensor<nat8> decoded := try vision.read<nat8>(
         "$TMP/roundtrip.png",
         channels = 3
     )
@@ -29,10 +29,10 @@ int | error run()
     print.line(decoded[2, 0, 0].item() == nat8(33))
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI

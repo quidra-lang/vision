@@ -11,10 +11,10 @@ export QUIDRA_CACHE_DIR="$TMP/run-cache"
 cat > "$TMP/boundary.qui" <<'QUI'
 import vision
 
-tensor<nat8> pixels = tensor.zeros<nat8>([3, 2, 3])
+tensor<nat8> pixels := tensor.zeros<nat8>([3, 2, 3])
 
-bool resize_rejected = false
-tensor<nat8> | error bad_resize = vision.resize(pixels, height = 0, width = 2)
+bool resize_rejected := false
+tensor<nat8> | error bad_resize := vision.resize(pixels, height = 0, width = 2)
 match bad_resize
     tensor<nat8>
         resize_rejected = false
@@ -22,8 +22,8 @@ match bad_resize
         resize_rejected = true
 print.line(resize_rejected)
 
-bool crop_rejected = false
-tensor<nat8> | error bad_crop = vision.crop(pixels, top = 1, left = 2, height = 2, width = 2)
+bool crop_rejected := false
+tensor<nat8> | error bad_crop := vision.crop(pixels, top = 1, left = 2, height = 2, width = 2)
 match bad_crop
     tensor<nat8>
         crop_rejected = false
@@ -31,9 +31,9 @@ match bad_crop
         crop_rejected = true
 print.line(crop_rejected)
 
-bool grayscale_rejected = false
-tensor<nat8> two_channels = tensor.zeros<nat8>([2, 2, 2])
-tensor<nat8> | error bad_grayscale = vision.grayscale(two_channels)
+bool grayscale_rejected := false
+tensor<nat8> two_channels := tensor.zeros<nat8>([2, 2, 2])
+tensor<nat8> | error bad_grayscale := vision.grayscale(two_channels)
 match bad_grayscale
     tensor<nat8>
         grayscale_rejected = false
@@ -41,8 +41,8 @@ match bad_grayscale
         grayscale_rejected = true
 print.line(grayscale_rejected)
 
-bool blur_rejected = false
-tensor<nat8> | error bad_blur = vision.blur(pixels, radius = -1)
+bool blur_rejected := false
+tensor<nat8> | error bad_blur := vision.blur(pixels, radius = -1)
 match bad_blur
     tensor<nat8>
         blur_rejected = false
@@ -50,9 +50,9 @@ match bad_blur
         blur_rejected = true
 print.line(blur_rejected)
 
-bool filter_rejected = false
-tensor<int64> kernel = tensor.ones<int64>([3, 3])
-tensor<nat8> | error bad_filter = vision.filter(pixels, kernel, divisor = 0)
+bool filter_rejected := false
+tensor<int64> kernel := tensor.ones<int64>([3, 3])
+tensor<nat8> | error bad_filter := vision.filter(pixels, kernel, divisor = 0)
 match bad_filter
     tensor<nat8>
         filter_rejected = false
@@ -60,8 +60,8 @@ match bad_filter
         filter_rejected = true
 print.line(filter_rejected)
 
-bool dilate_rejected = false
-tensor<nat8> | error bad_dilate = vision.dilate(pixels, radius = -1)
+bool dilate_rejected := false
+tensor<nat8> | error bad_dilate := vision.dilate(pixels, radius = -1)
 match bad_dilate
     tensor<nat8>
         dilate_rejected = false
@@ -69,8 +69,8 @@ match bad_dilate
         dilate_rejected = true
 print.line(dilate_rejected)
 
-bool erode_rejected = false
-tensor<nat8> | error bad_erode = vision.erode(pixels, radius = -1)
+bool erode_rejected := false
+tensor<nat8> | error bad_erode := vision.erode(pixels, radius = -1)
 match bad_erode
     tensor<nat8>
         erode_rejected = false
@@ -78,9 +78,9 @@ match bad_erode
         erode_rejected = true
 print.line(erode_rejected)
 
-bool rank_rejected = false
-tensor<nat8> rank_two = tensor.zeros<nat8>([2, 3])
-tensor<nat8> | error bad_flip = vision.flip_horizontal(rank_two)
+bool rank_rejected := false
+tensor<nat8> rank_two := tensor.zeros<nat8>([2, 3])
+tensor<nat8> | error bad_flip := vision.flip_horizontal(rank_two)
 match bad_flip
     tensor<nat8>
         rank_rejected = false
@@ -100,28 +100,28 @@ cat > "$TMP/properties.qui" <<'QUI'
 import vision
 
 int | error run()
-    tensor<nat8> pixels = tensor.zeros<nat8>([1, 2, 3])
-    int value = 1
+    tensor<nat8> pixels := tensor.zeros<nat8>([1, 2, 3])
+    int value := 1
     for 0 <= nat y < 2
         for 0 <= nat x < 3
             pixels[0, y, x] = nat8(value)
             value += 1
 
-    tensor<nat8> flipped_once = try vision.flip_horizontal(pixels)
-    tensor<nat8> flipped_twice = try vision.flip_horizontal(flipped_once)
-    tensor<nat8> r1 = try vision.rotate90(pixels)
-    tensor<nat8> r2 = try vision.rotate90(r1)
-    tensor<nat8> r3 = try vision.rotate90(r2)
-    tensor<nat8> rotated_four = try vision.rotate90(r3)
-    tensor<nat8> resized_same = try vision.resize(pixels, height = 2, width = 3)
-    tensor<nat8> dilated_zero = try vision.dilate(pixels, radius = 0)
-    tensor<nat8> eroded_zero = try vision.erode(pixels, radius = 0)
-    tensor<nat8> full_crop = try vision.crop(pixels, top = 0, left = 0, height = 2, width = 3)
+    tensor<nat8> flipped_once := try vision.flip_horizontal(pixels)
+    tensor<nat8> flipped_twice := try vision.flip_horizontal(flipped_once)
+    tensor<nat8> r1 := try vision.rotate90(pixels)
+    tensor<nat8> r2 := try vision.rotate90(r1)
+    tensor<nat8> r3 := try vision.rotate90(r2)
+    tensor<nat8> rotated_four := try vision.rotate90(r3)
+    tensor<nat8> resized_same := try vision.resize(pixels, height = 2, width = 3)
+    tensor<nat8> dilated_zero := try vision.dilate(pixels, radius = 0)
+    tensor<nat8> eroded_zero := try vision.erode(pixels, radius = 0)
+    tensor<nat8> full_crop := try vision.crop(pixels, top = 0, left = 0, height = 2, width = 3)
 
-    int differences = 0
+    int differences := 0
     for 0 <= nat y < 2
         for 0 <= nat x < 3
-            nat8 expected = pixels[0, y, x].item()
+            nat8 expected := pixels[0, y, x].item()
             if flipped_twice[0, y, x].item() != expected
                 differences += 1
             if rotated_four[0, y, x].item() != expected
@@ -137,10 +137,10 @@ int | error run()
     print.line(differences)
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -155,7 +155,7 @@ cat > "$TMP/downsample-boundary.qui" <<'QUI'
 import vision
 
 bool rejects_float(tensor<real32> pixels, int factor)
-    tensor<real32> | error result = vision.downsample_mean(pixels, factor)
+    tensor<real32> | error result := vision.downsample_mean(pixels, factor)
     match result
         tensor<real32>
             return false
@@ -163,15 +163,15 @@ bool rejects_float(tensor<real32> pixels, int factor)
             return true
 
 bool rejects_bytes(tensor<nat8> pixels, int factor)
-    tensor<nat8> | error result = vision.downsample_mean(pixels, factor)
+    tensor<nat8> | error result := vision.downsample_mean(pixels, factor)
     match result
         tensor<nat8>
             return false
         error
             return true
 
-tensor<real32> image = tensor.zeros<real32>([1, 4, 6])
-tensor<nat8> bytes = tensor.zeros<nat8>([1, 4, 6])
+tensor<real32> image := tensor.zeros<real32>([1, 4, 6])
+tensor<nat8> bytes := tensor.zeros<nat8>([1, 4, 6])
 print.line(rejects_float(image, 0))
 print.line(rejects_float(image, -2))
 print.line(rejects_float(image, 5))
@@ -200,8 +200,8 @@ cp "$REPOSITORY_ROOT/internal.qui" "$TMP/vision_internal.qui"
 cat > "$TMP/downsample-status.qui" <<'QUI'
 import composition = "./vision_internal.qui"
 
-int[] statuses = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-for auto status = statuses[]
+int[] statuses := [1, 2, 3, 4, 5, 6, 7, 8, 9]
+for status := statuses[]
     if composition.block_native_unavailable(int32(status))
         print("{status} portable")
     else
@@ -229,8 +229,8 @@ fi
 cat > "$TMP/vision-codes.qui" <<'QUI'
 import vision
 
-tensor<nat8> pixels = tensor.zeros<nat8>([3, 2, 2])
-tensor<nat8> | error bad_shape = vision.resize(pixels, height = 0, width = 2)
+tensor<nat8> pixels := tensor.zeros<nat8>([3, 2, 2])
+tensor<nat8> | error bad_shape := vision.resize(pixels, height = 0, width = 2)
 match bad_shape
     tensor<nat8>
         print(false)
@@ -238,7 +238,7 @@ match bad_shape
         print(problem.code == "VISION_ARGUMENT")
 print.line()
 
-tensor<nat8> | error bad_radius = vision.dilate(pixels, radius = -1)
+tensor<nat8> | error bad_radius := vision.dilate(pixels, radius = -1)
 match bad_radius
     tensor<nat8>
         print(false)
@@ -246,8 +246,8 @@ match bad_radius
         print(problem.code == "VISION_ARGUMENT")
 print.line()
 
-tensor<real32> floating = tensor.ones<real32>([3, 2, 2]).track()
-tensor<real32> | error bad_tracked = vision.threshold(floating, cutoff = real32(0.5))
+tensor<real32> floating := tensor.ones<real32>([3, 2, 2]).track()
+tensor<real32> | error bad_tracked := vision.threshold(floating, cutoff = real32(0.5))
 match bad_tracked
     tensor<real32>
         print(false)
@@ -255,8 +255,8 @@ match bad_tracked
         print(problem.code == "VISION_TRACKED")
 print.line()
 
-tensor<nat8> plane = tensor.zeros<nat8>([2, 2])
-tensor<nat8> | error bad_rank = vision.crop(plane, 0, 0, 1, 1)
+tensor<nat8> plane := tensor.zeros<nat8>([2, 2])
+tensor<nat8> | error bad_rank := vision.crop(plane, 0, 0, 1, 1)
 match bad_rank
     tensor<nat8>
         print(false)
@@ -275,7 +275,7 @@ printf 'not an image\n' > "$TMP/not-an-image.png"
 cat > "$TMP/vision-file-codes.qui" <<QUI
 import vision
 
-tensor<nat8> | error unreadable = vision.read<nat8>("$TMP/not-an-image.png")
+tensor<nat8> | error unreadable := vision.read<nat8>("$TMP/not-an-image.png")
 match unreadable
     tensor<nat8>
         print(false)
@@ -283,8 +283,8 @@ match unreadable
         print(problem.code == "VISION_DECODE")
 print.line()
 
-tensor<nat8> pixels = tensor.zeros<nat8>([3, 2, 2])
-void | error unwritable = vision.write("$TMP/codes.unsupported", pixels)
+tensor<nat8> pixels := tensor.zeros<nat8>([3, 2, 2])
+void | error unwritable := vision.write("$TMP/codes.unsupported", pixels)
 match unwritable
     void
         print(false)

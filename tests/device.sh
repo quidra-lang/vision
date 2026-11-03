@@ -15,10 +15,10 @@ cat > "$TMP/device-check.qui" <<'QUI'
 import vision
 
 int | error compile_device_surface()
-    tensor<nat8> direct = tensor.zeros<nat8>([3, 2, 2], gpu = 0)
-    tensor<nat8> transferred = tensor.ones<nat8>([3, 2, 2]).gpu(0)
-    tensor<nat8> roundtrip = transferred.cpu()
-    tensor<nat8> transformed = try vision.flip_horizontal(direct)
+    tensor<nat8> direct := tensor.zeros<nat8>([3, 2, 2], gpu = 0)
+    tensor<nat8> transferred := tensor.ones<nat8>([3, 2, 2]).gpu(0)
+    tensor<nat8> roundtrip := transferred.cpu()
+    tensor<nat8> transformed := try vision.flip_horizontal(direct)
     print.line(roundtrip.shape()[0])
     print.line(transformed.shape()[0])
     return 0
@@ -27,7 +27,7 @@ QUI
 QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" check "$TMP/device-check.qui" >/dev/null
 
 cat > "$TMP/no-fallback-create.qui" <<'QUI'
-tensor<nat8> value = tensor.zeros<nat8>([1, 1, 1], gpu = 2147483647)
+tensor<nat8> value := tensor.zeros<nat8>([1, 1, 1], gpu = 2147483647)
 print.line(value.shape()[0])
 QUI
 
@@ -46,8 +46,8 @@ if ! grep -Fq "gpu(2147483647) is not available" "$TMP/create.err"; then
 fi
 
 cat > "$TMP/no-fallback-transfer.qui" <<'QUI'
-tensor<nat8> cpu = tensor.ones<nat8>([1, 1, 1])
-tensor<nat8> value = cpu.gpu(2147483647)
+tensor<nat8> cpu := tensor.ones<nat8>([1, 1, 1])
+tensor<nat8> value := cpu.gpu(2147483647)
 print.line(value.shape()[0])
 QUI
 
@@ -95,7 +95,7 @@ cat > "$TMP/vision-gpu-compute.qui" <<'QUI'
 import vision
 
 int | error run()
-    tensor<nat8> pixels = tensor.zeros<nat8>([1, 2, 3], gpu = 0)
+    tensor<nat8> pixels := tensor.zeros<nat8>([1, 2, 3], gpu = 0)
     pixels[0, 0, 0] = nat8(1)
     pixels[0, 0, 1] = nat8(2)
     pixels[0, 0, 2] = nat8(3)
@@ -103,15 +103,15 @@ int | error run()
     pixels[0, 1, 1] = nat8(5)
     pixels[0, 1, 2] = nat8(6)
 
-    tensor<nat8> cropped = try vision.crop(
+    tensor<nat8> cropped := try vision.crop(
         pixels, top = 0, left = 1, height = 2, width = 2
     )
-    tensor<nat8> resized = try vision.resize(pixels, height = 4, width = 6)
-    tensor<nat8> horizontal = try vision.flip_horizontal(pixels)
-    tensor<nat8> vertical = try vision.flip_vertical(pixels)
-    tensor<nat8> turned90 = try vision.rotate90(pixels)
-    tensor<nat8> turned180 = try vision.rotate180(pixels)
-    tensor<nat8> turned270 = try vision.rotate270(pixels)
+    tensor<nat8> resized := try vision.resize(pixels, height = 4, width = 6)
+    tensor<nat8> horizontal := try vision.flip_horizontal(pixels)
+    tensor<nat8> vertical := try vision.flip_vertical(pixels)
+    tensor<nat8> turned90 := try vision.rotate90(pixels)
+    tensor<nat8> turned180 := try vision.rotate180(pixels)
+    tensor<nat8> turned270 := try vision.rotate270(pixels)
 
     print.line(cropped[0, 0, 0].item())
     print.line(resized.shape()[1])
@@ -123,24 +123,24 @@ int | error run()
     print.line(turned180[0, 0, 0].item())
     print.line(turned270[0, 0, 0].item())
 
-    tensor<nat8> rgb = tensor.ones<nat8>([3, 2, 2], gpu = 0)
-    tensor<nat8> gray = try vision.grayscale(rgb)
-    tensor<nat8> binary = try vision.threshold(pixels, cutoff = nat8(4))
+    tensor<nat8> rgb := tensor.ones<nat8>([3, 2, 2], gpu = 0)
+    tensor<nat8> gray := try vision.grayscale(rgb)
+    tensor<nat8> binary := try vision.threshold(pixels, cutoff = nat8(4))
     print.line(gray[0, 0, 0].item())
     print.line(binary[0, 0, 0].item())
     print.line(binary[0, 1, 2].item())
 
-    tensor<nat8> impulse = tensor.zeros<nat8>([1, 3, 3], gpu = 0)
+    tensor<nat8> impulse := tensor.zeros<nat8>([1, 3, 3], gpu = 0)
     impulse[0, 1, 1] = nat8(255)
-    tensor<nat8> blurred = try vision.blur(impulse, radius = 1)
-    tensor<nat8> expanded = try vision.dilate(impulse, radius = 1)
-    tensor<nat8> contracted = try vision.erode(impulse, radius = 1)
-    tensor<nat8> huge_blurred = try vision.blur(impulse, radius = 2147483647)
-    tensor<nat8> huge_expanded = try vision.dilate(impulse, radius = 2147483647)
-    tensor<nat8> huge_contracted = try vision.erode(impulse, radius = 2147483647)
-    tensor<int64> kernel = tensor.zeros<int64>([3, 3], gpu = 0)
+    tensor<nat8> blurred := try vision.blur(impulse, radius = 1)
+    tensor<nat8> expanded := try vision.dilate(impulse, radius = 1)
+    tensor<nat8> contracted := try vision.erode(impulse, radius = 1)
+    tensor<nat8> huge_blurred := try vision.blur(impulse, radius = 2147483647)
+    tensor<nat8> huge_expanded := try vision.dilate(impulse, radius = 2147483647)
+    tensor<nat8> huge_contracted := try vision.erode(impulse, radius = 2147483647)
+    tensor<int64> kernel := tensor.zeros<int64>([3, 3], gpu = 0)
     kernel[1, 1] = 1
-    tensor<nat8> filtered = try vision.filter(impulse, kernel)
+    tensor<nat8> filtered := try vision.filter(impulse, kernel)
     print.line(blurred[0, 1, 1].item())
     print.line(expanded[0, 0, 0].item())
     print.line(contracted[0, 1, 1].item())
@@ -150,10 +150,10 @@ int | error run()
     print.line(filtered[0, 1, 1].item())
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -169,9 +169,9 @@ fi
 cat > "$TMP/filter-device-mismatch.qui" <<'QUI'
 import vision
 
-tensor<nat8> pixels = tensor.ones<nat8>([1, 2, 2], gpu = 0)
-tensor<int64> kernel = tensor.ones<int64>([1, 1])
-tensor<nat8> | error output = vision.filter(pixels, kernel)
+tensor<nat8> pixels := tensor.ones<nat8>([1, 2, 2], gpu = 0)
+tensor<int64> kernel := tensor.ones<int64>([1, 1])
+tensor<nat8> | error output := vision.filter(pixels, kernel)
 match output
     tensor<nat8> value
         print.line(value.shape()[0])
@@ -183,8 +183,8 @@ expect_device_failure "$TMP/filter-device-mismatch.qui" "tensor operands are on 
 cat > "$TMP/image-write-gpu.qui" <<'QUI'
 import vision
 
-tensor<nat8> image_gpu = tensor.ones<nat8>([1, 1, 1], gpu = 0)
-auto | error written = vision.write("should-not-exist.png", image_gpu)
+tensor<nat8> image_gpu := tensor.ones<nat8>([1, 1, 1], gpu = 0)
+void | error written := vision.write("should-not-exist.png", image_gpu)
 match written
     void
         print.line("unexpected success")
@@ -212,8 +212,8 @@ import math
 import composition = "./vision_internal.qui"
 
 int differences(tensor<real32> left, tensor<real32> right)
-    int[] shape = int(left.shape())
-    int count = 0
+    int[] shape := int(left.shape())
+    int count := 0
     for 0 <= int c < shape[0]
         for 0 <= int y < shape[1]
             for 0 <= int x < shape[2]
@@ -222,29 +222,29 @@ int differences(tensor<real32> left, tensor<real32> right)
     return count
 
 int | error run()
-    tensor<real32> host = tensor.zeros<real32>([2, 7, 9])
-    tensor<nat8> host_bytes = tensor.zeros<nat8>([2, 7, 9])
-    int index = 0
+    tensor<real32> host := tensor.zeros<real32>([2, 7, 9])
+    tensor<nat8> host_bytes := tensor.zeros<nat8>([2, 7, 9])
+    int index := 0
     for 0 <= nat c < 2
         for 0 <= nat y < 7
             for 0 <= nat x < 9
-                real32 sample = real32((index * 13) % 11)
+                real32 sample := real32((index * 13) % 11)
                 host[c, y, x] = sample * real32(0.3) - real32(1)
-                int byte_value = (index * 57) % 256
+                int byte_value := (index * 57) % 256
                 host_bytes[c, y, x] = nat8(byte_value)
                 index += 1
 
     // Results stay on the input's device and match the CPU result.
-    tensor<real32> on_device = try vision.downsample_mean(host.gpu(1), 3)
-    tensor<real32> on_host = try vision.downsample_mean(host, 3)
+    tensor<real32> on_device := try vision.downsample_mean(host.gpu(1), 3)
+    tensor<real32> on_host := try vision.downsample_mean(host, 3)
     print.line(on_device.device())
     print.line(differences(on_device.cpu(), on_host))
 
-    tensor<nat8> bytes_on_device = try vision.downsample_mean(host_bytes.gpu(0), 2)
-    tensor<nat8> bytes_on_host = try vision.downsample_mean(host_bytes, 2)
+    tensor<nat8> bytes_on_device := try vision.downsample_mean(host_bytes.gpu(0), 2)
+    tensor<nat8> bytes_on_host := try vision.downsample_mean(host_bytes, 2)
     print.line(bytes_on_device.device())
-    tensor<nat8> bytes_back = bytes_on_device.cpu()
-    int byte_differences = 0
+    tensor<nat8> bytes_back := bytes_on_device.cpu()
+    int byte_differences := 0
     for 0 <= nat c < 2
         for 0 <= nat y < 3
             for 0 <= nat x < 4
@@ -253,23 +253,23 @@ int | error run()
     print.line(byte_differences)
 
     // Tracked device input keeps its graph and gradients on that device.
-    tensor<real32> source = host.gpu(0).track()
-    tensor<real32> reduced = try vision.downsample_mean(source, 3)
+    tensor<real32> source := host.gpu(0).track()
+    tensor<real32> reduced := try vision.downsample_mean(source, 3)
     print.line(reduced.is_tracked())
     math.mean(reduced).backward(&source)
     print.line(source.grad.device())
-    tensor<real32> host_source = host.track()
-    tensor<real32> host_reduced = try vision.downsample_mean(host_source, 3)
+    tensor<real32> host_source := host.track()
+    tensor<real32> host_reduced := try vision.downsample_mean(host_source, 3)
     math.mean(host_reduced).backward(&host_source)
     print.line(differences(source.grad.cpu(), host_source.grad))
 
     // A tracked non-contiguous view stays on the device, and its values and
     // gradients match the CPU.
-    tensor<real32> view = host.gpu(0).transpose(1, 2).track()
-    tensor<real32> view_reduced = try vision.downsample_mean(view, 2)
+    tensor<real32> view := host.gpu(0).transpose(1, 2).track()
+    tensor<real32> view_reduced := try vision.downsample_mean(view, 2)
     print.line(view_reduced.device())
-    tensor<real32> host_view = host.transpose(1, 2).track()
-    tensor<real32> host_view_reduced = try vision.downsample_mean(host_view, 2)
+    tensor<real32> host_view := host.transpose(1, 2).track()
+    tensor<real32> host_view_reduced := try vision.downsample_mean(host_view, 2)
     math.mean(view_reduced * view_reduced).backward(&view)
     math.mean(host_view_reduced * host_view_reduced).backward(&host_view)
     print.line(view.grad.device())
@@ -277,33 +277,33 @@ int | error run()
 
     // A strided upstream gradient (transpose after the block mean) reaches
     // the device gradient kernel densely and matches the CPU.
-    tensor<real32> weights = tensor.zeros<real32>([2, 3, 2])
+    tensor<real32> weights := tensor.zeros<real32>([2, 3, 2])
     for 0 <= nat c < 2
         for 0 <= nat y < 3
             for 0 <= nat x < 2
-                nat weight_index = c * 6 + y * 2 + x + 1
-                real32 weight_sample = real32(weight_index)
+                nat weight_index := c * 6 + y * 2 + x + 1
+                real32 weight_sample := real32(weight_index)
                 weights[c, y, x] = weight_sample * real32(0.25)
-    tensor<real32> strided_source = host.gpu(1).track()
-    tensor<real32> strided_reduced = try vision.downsample_mean(strided_source, 3)
+    tensor<real32> strided_source := host.gpu(1).track()
+    tensor<real32> strided_reduced := try vision.downsample_mean(strided_source, 3)
     math.mean(strided_reduced.transpose(1, 2) * weights.gpu(1)).backward(&strided_source)
-    tensor<real32> host_strided_source = host.track()
-    tensor<real32> host_strided_reduced = try vision.downsample_mean(host_strided_source, 3)
+    tensor<real32> host_strided_source := host.track()
+    tensor<real32> host_strided_reduced := try vision.downsample_mean(host_strided_source, 3)
     math.mean(host_strided_reduced.transpose(1, 2) * weights).backward(&host_strided_source)
     print.line(strided_source.grad.device())
     print.line(differences(strided_source.grad.cpu(), host_strided_source.grad))
 
     // The portable composition gives the native results on CPU and on the
     // device, for floating and nat8 input.
-    tensor<real32> portable_host = composition.block_mean<real32>(host, 3)
-    tensor<real32> portable_device = composition.block_mean<real32>(host.gpu(0), 3)
+    tensor<real32> portable_host := composition.block_mean<real32>(host, 3)
+    tensor<real32> portable_device := composition.block_mean<real32>(host.gpu(0), 3)
     print.line(portable_device.device())
     print.line(differences(portable_host, on_host) + differences(portable_device.cpu(), on_host))
-    tensor<nat8> portable_bytes_host = try composition.block_mean_u8(host_bytes, 2)
-    tensor<nat8> portable_bytes_device = try composition.block_mean_u8(host_bytes.gpu(1), 2)
+    tensor<nat8> portable_bytes_host := try composition.block_mean_u8(host_bytes, 2)
+    tensor<nat8> portable_bytes_device := try composition.block_mean_u8(host_bytes.gpu(1), 2)
     print.line(portable_bytes_device.device())
-    tensor<nat8> portable_bytes_back = portable_bytes_device.cpu()
-    int portable_byte_differences = 0
+    tensor<nat8> portable_bytes_back := portable_bytes_device.cpu()
+    int portable_byte_differences := 0
     for 0 <= nat c < 2
         for 0 <= nat y < 3
             for 0 <= nat x < 4
@@ -312,16 +312,16 @@ int | error run()
                 if portable_bytes_back[c, y, x].item() != bytes_on_host[c, y, x].item()
                     portable_byte_differences += 1
     print.line(portable_byte_differences)
-    tensor<real32> portable_source = host.gpu(0).track()
-    tensor<real32> portable_reduced = composition.block_mean<real32>(portable_source, 3)
+    tensor<real32> portable_source := host.gpu(0).track()
+    tensor<real32> portable_reduced := composition.block_mean<real32>(portable_source, 3)
     math.mean(portable_reduced).backward(&portable_source)
     print.line(differences(portable_source.grad.cpu(), host_source.grad))
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -346,45 +346,45 @@ import vision
 import math
 
 tensor<real32> pattern32(int channels, int height, int width, int seed)
-    tensor<real32> value = tensor.zeros<real32>([nat(channels), nat(height), nat(width)])
+    tensor<real32> value := tensor.zeros<real32>([nat(channels), nat(height), nat(width)])
     for 0 <= int c < channels
         for 0 <= int y < height
             for 0 <= int x < width
-                real32 sample = real32((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
+                real32 sample := real32((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / real32(48) - real32(1)
     return value
 
 tensor<real64> pattern64(int channels, int height, int width, int seed)
-    tensor<real64> value = tensor.zeros<real64>([nat(channels), nat(height), nat(width)])
+    tensor<real64> value := tensor.zeros<real64>([nat(channels), nat(height), nat(width)])
     for 0 <= int c < channels
         for 0 <= int y < height
             for 0 <= int x < width
-                real64 sample = real64((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
+                real64 sample := real64((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / 48.0 - 1.0
     return value
 
 void sample32(string label, tensor<real32> value)
-    tensor<real32> flat = value.untrack().cpu().contiguous()
-    int count = 1
-    for auto extent = flat.shape()[]
+    tensor<real32> flat := value.untrack().cpu().contiguous()
+    int count := 1
+    for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
         print.line("{label} {index} {flat[index].item()}")
 
 void sample64(string label, tensor<real64> value)
-    tensor<real64> flat = value.untrack().cpu().contiguous()
-    int count = 1
-    for auto extent = flat.shape()[]
+    tensor<real64> flat := value.untrack().cpu().contiguous()
+    int count := 1
+    for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
         print.line("{label} {index} {flat[index].item()}")
 
 void sample8(string label, tensor<nat8> value)
-    tensor<nat8> flat = value.cpu().contiguous()
-    int count = 1
-    for auto extent = flat.shape()[]
+    tensor<nat8> flat := value.cpu().contiguous()
+    int count := 1
+    for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
@@ -393,17 +393,17 @@ void sample8(string label, tensor<nat8> value)
 int | error run()
     // Factor 3 leaves a row and two columns outside every block, which the
     // spread fills with zeros.
-    tensor<real32> source = pattern32(2, 64, 401, 1).gpu(0).track()
-    tensor<real32> reduced = try vision.downsample_mean(source, 3)
-    tensor<real32> weights = pattern32(2, 21, 133, 2).gpu(0)
+    tensor<real32> source := pattern32(2, 64, 401, 1).gpu(0).track()
+    tensor<real32> reduced := try vision.downsample_mean(source, 3)
+    tensor<real32> weights := pattern32(2, 21, 133, 2).gpu(0)
     math.mean(reduced * weights * reduced).backward(&source, track = true)
-    tensor<real32> first = source.grad
+    tensor<real32> first := source.grad
     sample32("mean32", reduced)
     sample32("grad32", first)
     math.mean(first * first).backward(&source)
     sample32("second32", source.grad)
 
-    tensor<nat8> bytes = tensor.zeros<nat8>([2, 64, 401])
+    tensor<nat8> bytes := tensor.zeros<nat8>([2, 64, 401])
     for 0 <= nat c < 2
         for 0 <= nat y < 64
             for 0 <= nat x < 401
@@ -412,23 +412,23 @@ int | error run()
     return 0
 
 int | error run64()
-    tensor<real64> source = pattern64(2, 64, 401, 3).gpu(0).track()
-    tensor<real64> reduced = try vision.downsample_mean(source, 3)
+    tensor<real64> source := pattern64(2, 64, 401, 3).gpu(0).track()
+    tensor<real64> reduced := try vision.downsample_mean(source, 3)
     math.mean(reduced * reduced).backward(&source)
     sample64("mean64", reduced)
     sample64("grad64", source.grad)
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
-auto | error result64 = run64()
+int | error result64 := run64()
 match result64
     int
-        int ignored = result64
+        int ignored := result64
     error problem
         print.line(problem)
 QUI
@@ -459,16 +459,16 @@ for element in real32 nat8; do
 import vision
 
 int | error run()
-    tensor<$element> pixels = tensor<$element>([1, 4, 4], gpu = 0)
+    tensor<$element> pixels := tensor<$element>([1, 4, 4], gpu = 0)
     pixels[0, 0, 0] = $element(1)
-    tensor<$element> reduced = try vision.downsample_mean(pixels, 2)
+    tensor<$element> reduced := try vision.downsample_mean(pixels, 2)
     print.line(reduced.cpu()[0, 0, 0].item())
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI

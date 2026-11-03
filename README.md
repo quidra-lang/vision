@@ -45,8 +45,8 @@ import vision
 
 | Operation | Signature |
 | --- | --- |
-| `read` | `read<T: numeric>(string path, int channels = 0) -> tensor<T> \| error` |
-| `write` | `write<T: numeric>(string path, tensor<T> pixels, int quality = 90) -> void \| error` |
+| `read` | `read<T: numeric>(string path, int channels := 0) -> tensor<T> \| error` |
+| `write` | `write<T: numeric>(string path, tensor<T> pixels, int quality := 90) -> void \| error` |
 | `crop` | `crop<T>(tensor<T> pixels, int top, int left, int height, int width) -> tensor<T> \| error` |
 | `resize` | `resize<T>(tensor<T> pixels, int height, int width) -> tensor<T> \| error` |
 | `downsample_mean` | `downsample_mean(tensor<nat8> pixels, int factor) -> tensor<nat8> \| error`; `downsample_mean<T: floating>(tensor<T> pixels, int factor) -> tensor<T> \| error` |
@@ -56,11 +56,11 @@ import vision
 | `rotate180` | `rotate180<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `rotate270` | `rotate270<T>(tensor<T> pixels) -> tensor<T> \| error` |
 | `grayscale` | `grayscale(tensor<nat8> pixels) -> tensor<nat8> \| error`; `grayscale<T: floating>(tensor<T> pixels) -> tensor<T> \| error` |
-| `threshold` | `threshold(tensor<nat8> pixels, nat8 cutoff, nat8 low = nat8(0), nat8 high = nat8(255)) -> tensor<nat8> \| error`; `threshold<T: floating>(tensor<T> pixels, T cutoff, T low = 0.0, T high = 1.0) -> tensor<T> \| error` |
-| `blur` | `blur(tensor<nat8> pixels, int radius = 1) -> tensor<nat8> \| error`; `blur<T: floating>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
-| `filter` | `filter(tensor<nat8> pixels, tensor<int64> kernel, int divisor = 1, int offset = 0) -> tensor<nat8> \| error`; `filter<T: floating, K: floating>(tensor<T> pixels, tensor<K> kernel, K divisor = 1.0, K offset = 0.0) -> tensor<T> \| error` |
-| `dilate` | `dilate<T>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
-| `erode` | `erode<T>(tensor<T> pixels, int radius = 1) -> tensor<T> \| error` |
+| `threshold` | `threshold(tensor<nat8> pixels, nat8 cutoff, nat8 low := nat8(0), nat8 high := nat8(255)) -> tensor<nat8> \| error`; `threshold<T: floating>(tensor<T> pixels, T cutoff, T low := 0.0, T high := 1.0) -> tensor<T> \| error` |
+| `blur` | `blur(tensor<nat8> pixels, int radius := 1) -> tensor<nat8> \| error`; `blur<T: floating>(tensor<T> pixels, int radius := 1) -> tensor<T> \| error` |
+| `filter` | `filter(tensor<nat8> pixels, tensor<int64> kernel, int divisor := 1, int offset := 0) -> tensor<nat8> \| error`; `filter<T: floating, K: floating>(tensor<T> pixels, tensor<K> kernel, K divisor := 1.0, K offset := 0.0) -> tensor<T> \| error` |
+| `dilate` | `dilate<T>(tensor<T> pixels, int radius := 1) -> tensor<T> \| error` |
+| `erode` | `erode<T>(tensor<T> pixels, int radius := 1) -> tensor<T> \| error` |
 
 `crop`, `resize`, flips, and rotations accept tensors with rank >= 3 and interpret the trailing dimensions as `(..., C, H, W)`, preserving every leading dimension. Floating tracked tensors remain tracked through these geometry operations and participate in autograd. Floating grayscale, blur/filter, and morphology paths are compositions of Core tensor primitives, so their graphs remain differentiable through `backward(track = true)` for higher-order derivatives as well as ordinary first-order backward. Thresholding never detaches implicitly and rejects tracked floating input.
 
@@ -111,8 +111,8 @@ Vision uses Quidra's tensor placement semantics directly. Image decoding through
 data to a GPU is always an explicit caller action:
 
 ```quidra
-tensor<nat8> image_cpu = vision.read<nat8>("input.png")
-tensor<nat8> image_gpu = image_cpu.gpu(0)
+tensor<nat8> image_cpu := vision.read<nat8>("input.png")
+tensor<nat8> image_gpu := image_cpu.gpu(0)
 ```
 
 Vision never moves an input to CPU or GPU implicitly. Tensor geometry

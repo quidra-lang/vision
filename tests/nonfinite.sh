@@ -10,7 +10,7 @@ export QUIDRA_CACHE_DIR="${QUIDRA_CACHE_DIR:-$TMP/run-cache}"
 cat > "$TMP/finite.qui" <<'QUI'
 import vision
 
-tensor<real32> | error reduced = vision.downsample_mean(
+tensor<real32> | error reduced := vision.downsample_mean(
     tensor.ones<real32>([1, 2, 2]), 2
 )
 match reduced
@@ -32,8 +32,8 @@ for element in real32 real64; do
     if [[ "$element" == real32 ]]; then large=3.0e38; else large=1.0e308; fi
     cat > "$TMP/overflow.qui" <<QUI
 import vision
-tensor<$element> pixels = tensor.ones<$element>([1, 2, 2]) * $element($large)
-tensor<$element> | error reduced = vision.downsample_mean(pixels, 2)
+tensor<$element> pixels := tensor.ones<$element>([1, 2, 2]) * $element($large)
+tensor<$element> | error reduced := vision.downsample_mean(pixels, 2)
 match reduced
     tensor<$element> value
         print(value[0, 0, 0].item() == $element(inf))
@@ -49,12 +49,12 @@ QUI
 
     cat > "$TMP/opposed.qui" <<QUI
 import vision
-$element infinity = $element(1) / $element(0)
-tensor<$element> pixels = tensor.ones<$element>([1, 2, 2])
+$element infinity := $element(1) / $element(0)
+tensor<$element> pixels := tensor.ones<$element>([1, 2, 2])
 pixels[0, 0, 0] = infinity
 pixels[0, 0, 1] = -infinity
 print.line("before")
-tensor<$element> | error reduced = vision.downsample_mean(pixels, 2)
+tensor<$element> | error reduced := vision.downsample_mean(pixels, 2)
 print.line("after")
 QUI
     set +e
@@ -98,7 +98,7 @@ PY_TIFF
 for element in real32 real64; do
     cat > "$TMP/read-infinity.qui" <<QUI
 import vision
-tensor<$element> | error result = vision.read<$element>("$TMP/$element-inf.tiff")
+tensor<$element> | error result := vision.read<$element>("$TMP/$element-inf.tiff")
 match result
     tensor<$element> data
         print(data[0, 0, 0].item() == $element(inf) and data[0, 0, 1].item() == $element(-inf))
@@ -115,7 +115,7 @@ QUI
     cat > "$TMP/read-nan.qui" <<QUI
 import vision
 print.line("before")
-tensor<$element> | error result = vision.read<$element>("$TMP/$element-nan.tiff")
+tensor<$element> | error result := vision.read<$element>("$TMP/$element-nan.tiff")
 print.line("after")
 QUI
     set +e

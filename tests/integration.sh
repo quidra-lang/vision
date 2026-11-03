@@ -13,13 +13,13 @@ cat > "$TMP/image-io.qui" <<QUI
 import vision
 
 int | error run()
-    tensor<nat8> pixels = tensor.zeros<nat8>([3, 2, 2])
+    tensor<nat8> pixels := tensor.zeros<nat8>([3, 2, 2])
     pixels[0, 0, 0] = nat8(10)
     pixels[1, 0, 0] = nat8(20)
     pixels[2, 0, 0] = nat8(30)
     pixels[0, 1, 1] = nat8(200)
     try vision.write("$TMP/roundtrip.bmp", pixels)
-    tensor<nat8> decoded = try vision.read<nat8>("$TMP/roundtrip.bmp", channels = 3)
+    tensor<nat8> decoded := try vision.read<nat8>("$TMP/roundtrip.bmp", channels = 3)
     print.line(decoded.shape()[0] == 3)
     print.line(decoded.shape()[1] == 2)
     print.line(decoded.shape()[2] == 2)
@@ -29,10 +29,10 @@ int | error run()
     print.line(decoded[0, 1, 1].item() == nat8(200))
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -49,20 +49,20 @@ cat > "$TMP/use-vision.qui" <<'QUI'
 import vision
 
 int | error run()
-    tensor<nat8> pixels = tensor.zeros<nat8>([3, 2, 3])
-    int value = 0
+    tensor<nat8> pixels := tensor.zeros<nat8>([3, 2, 3])
+    int value := 0
     for 0 <= nat channel < 3
         for 0 <= nat y < 2
             for 0 <= nat x < 3
                 pixels[channel, y, x] = nat8(value)
                 value += 1
 
-    tensor<nat8> cropped = try vision.crop(pixels, top = 0, left = 1, height = 2, width = 2)
-    tensor<nat8> resized = try vision.resize(pixels, height = 4, width = 6)
-    tensor<nat8> flipped = try vision.flip_horizontal(pixels)
-    tensor<nat8> rotated = try vision.rotate90(pixels)
-    tensor<nat8> gray = try vision.grayscale(pixels)
-    tensor<nat8> binary = try vision.threshold(pixels, cutoff = nat8(8))
+    tensor<nat8> cropped := try vision.crop(pixels, top = 0, left = 1, height = 2, width = 2)
+    tensor<nat8> resized := try vision.resize(pixels, height = 4, width = 6)
+    tensor<nat8> flipped := try vision.flip_horizontal(pixels)
+    tensor<nat8> rotated := try vision.rotate90(pixels)
+    tensor<nat8> gray := try vision.grayscale(pixels)
+    tensor<nat8> binary := try vision.threshold(pixels, cutoff = nat8(8))
 
     print.line(cropped.shape()[2])
     print.line(cropped[0, 0, 0].item())
@@ -76,10 +76,10 @@ int | error run()
     print.line(binary[2, 1, 2].item())
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -95,22 +95,22 @@ cat > "$TMP/filters.qui" <<'QUI'
 import vision
 
 int | error run()
-    tensor<nat8> impulse = tensor.zeros<nat8>([1, 3, 3])
+    tensor<nat8> impulse := tensor.zeros<nat8>([1, 3, 3])
     impulse[0, 1, 1] = nat8(255)
-    tensor<nat8> blurred = try vision.blur(impulse, radius = 1)
-    tensor<nat8> expanded = try vision.dilate(impulse, radius = 1)
-    tensor<nat8> contracted = try vision.erode(impulse, radius = 1)
-    tensor<int64> kernel = tensor.zeros<int64>([3, 3])
+    tensor<nat8> blurred := try vision.blur(impulse, radius = 1)
+    tensor<nat8> expanded := try vision.dilate(impulse, radius = 1)
+    tensor<nat8> contracted := try vision.erode(impulse, radius = 1)
+    tensor<int64> kernel := tensor.zeros<int64>([3, 3])
     kernel[1, 1] = 1
-    tensor<nat8> filtered = try vision.filter(impulse, kernel)
+    tensor<nat8> filtered := try vision.filter(impulse, kernel)
 
-    tensor<nat8> line = tensor.zeros<nat8>([1, 1, 3])
+    tensor<nat8> line := tensor.zeros<nat8>([1, 1, 3])
     line[0, 0, 0] = nat8(10)
     line[0, 0, 1] = nat8(20)
     line[0, 0, 2] = nat8(30)
-    tensor<int64> directional_kernel = tensor.zeros<int64>([1, 2])
+    tensor<int64> directional_kernel := tensor.zeros<int64>([1, 2])
     directional_kernel[0, 0] = 1
-    tensor<nat8> directional = try vision.filter(line, directional_kernel)
+    tensor<nat8> directional := try vision.filter(line, directional_kernel)
 
     print.line(blurred[0, 1, 1].item())
     print.line(blurred[0, 0, 0].item())
@@ -121,10 +121,10 @@ int | error run()
     print.line(directional[0, 0, 2].item())
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -140,17 +140,17 @@ cat > "$TMP/rotations.qui" <<'QUI'
 import vision
 
 int | error run()
-    tensor<nat8> pixels = tensor.zeros<nat8>([1, 2, 3])
-    int value = 1
+    tensor<nat8> pixels := tensor.zeros<nat8>([1, 2, 3])
+    int value := 1
     for 0 <= nat y < 2
         for 0 <= nat x < 3
             pixels[0, y, x] = nat8(value)
             value += 1
 
-    tensor<nat8> turned90 = try vision.rotate90(pixels)
-    tensor<nat8> turned180 = try vision.rotate180(pixels)
-    tensor<nat8> turned270 = try vision.rotate270(pixels)
-    tensor<nat8> mirrored = try vision.flip_vertical(pixels)
+    tensor<nat8> turned90 := try vision.rotate90(pixels)
+    tensor<nat8> turned180 := try vision.rotate180(pixels)
+    tensor<nat8> turned270 := try vision.rotate270(pixels)
+    tensor<nat8> mirrored := try vision.flip_vertical(pixels)
 
     print.line(turned90[0, 0, 0].item())
     print.line(turned90[0, 2, 1].item())
@@ -160,11 +160,11 @@ int | error run()
     print.line(turned270[0, 2, 1].item())
     print.line(mirrored[0, 0, 0].item())
 
-    tensor<nat8> after270 = try vision.rotate270(pixels)
-    tensor<nat8> full_turn = try vision.rotate90(after270)
-    tensor<nat8> first90 = try vision.rotate90(pixels)
-    tensor<nat8> half_turn = try vision.rotate90(first90)
-    int differences = 0
+    tensor<nat8> after270 := try vision.rotate270(pixels)
+    tensor<nat8> full_turn := try vision.rotate90(after270)
+    tensor<nat8> first90 := try vision.rotate90(pixels)
+    tensor<nat8> half_turn := try vision.rotate90(first90)
+    int differences := 0
     for 0 <= nat y < 2
         for 0 <= nat x < 3
             if full_turn[0, y, x].item() != pixels[0, y, x].item()
@@ -174,10 +174,10 @@ int | error run()
     print.line(differences)
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -193,22 +193,22 @@ cat > "$TMP/leading-dimensions.qui" <<'QUI'
 import vision
 
 int | error run()
-    tensor<nat8> rgb = tensor.zeros<nat8>([2, 3, 1, 1])
+    tensor<nat8> rgb := tensor.zeros<nat8>([2, 3, 1, 1])
     rgb[0, 0, 0, 0] = nat8(100)
     rgb[0, 1, 0, 0] = nat8(150)
     rgb[0, 2, 0, 0] = nat8(200)
     rgb[1, 0, 0, 0] = nat8(255)
-    tensor<nat8> gray = try vision.grayscale(rgb)
-    int[] gray_shape = int(gray.shape())
+    tensor<nat8> gray := try vision.grayscale(rgb)
+    int[] gray_shape := int(gray.shape())
     print.line(len(gray_shape) == 4 and gray_shape[0] == 2 and gray_shape[1] == 1)
     print.line(gray[0, 0, 0, 0].item() == nat8(141))
     print.line(gray[1, 0, 0, 0].item() == nat8(76))
 
-    tensor<nat8> stack = tensor.zeros<nat8>([1, 2, 1, 2, 2])
+    tensor<nat8> stack := tensor.zeros<nat8>([1, 2, 1, 2, 2])
     stack[0, 0, 0, 0, 0] = nat8(10)
     stack[0, 0, 0, 0, 1] = nat8(200)
     stack[0, 1, 0, 1, 1] = nat8(250)
-    tensor<nat8> thresholded = try vision.threshold(
+    tensor<nat8> thresholded := try vision.threshold(
         stack, nat8(128), low = nat8(3), high = nat8(9)
     )
     print.line(thresholded.shape()[1] == 2)
@@ -216,42 +216,42 @@ int | error run()
     print.line(thresholded[0, 0, 0, 0, 1].item() == nat8(9))
     print.line(thresholded[0, 1, 0, 1, 1].item() == nat8(9))
 
-    tensor<real32> floating = tensor.zeros<real32>([1, 1, 1, 3])
+    tensor<real32> floating := tensor.zeros<real32>([1, 1, 1, 3])
     floating[0, 0, 0, 0] = real32(0.25)
     floating[0, 0, 0, 1] = real32(0.5)
     floating[0, 0, 0, 2] = real32(0.75)
-    tensor<real32> floating_thresholded = try vision.threshold(
+    tensor<real32> floating_thresholded := try vision.threshold(
         floating, real32(0.5), low = real32(-1.0), high = real32(2.0)
     )
     print.line(floating_thresholded[0, 0, 0, 0].item() == real32(-1.0))
     print.line(floating_thresholded[0, 0, 0, 1].item() == real32(2.0))
     print.line(floating_thresholded[0, 0, 0, 2].item() == real32(2.0))
 
-    tensor<nat8> images = tensor.zeros<nat8>([2, 1, 3, 3])
+    tensor<nat8> images := tensor.zeros<nat8>([2, 1, 3, 3])
     images[0, 0, 1, 1] = nat8(255)
     images[1, 0, 0, 0] = nat8(90)
-    tensor<nat8> blurred = try vision.blur(images, radius = 1)
+    tensor<nat8> blurred := try vision.blur(images, radius = 1)
     print.line(blurred.shape()[0] == 2 and blurred.shape()[1] == 1)
     print.line(blurred[0, 0, 1, 1].item() == nat8(28))
     print.line(blurred[1, 0, 2, 2].item() == nat8(0))
 
-    tensor<int64> identity = tensor.zeros<int64>([1, 1])
+    tensor<int64> identity := tensor.zeros<int64>([1, 1])
     identity[0, 0] = 1
-    tensor<nat8> filtered = try vision.filter(images, identity)
+    tensor<nat8> filtered := try vision.filter(images, identity)
     print.line(filtered[0, 0, 1, 1].item() == nat8(255))
     print.line(filtered[1, 0, 0, 0].item() == nat8(90))
 
-    tensor<nat8> expanded = try vision.dilate(stack, radius = 1)
-    tensor<nat8> contracted = try vision.erode(stack, radius = 1)
+    tensor<nat8> expanded := try vision.dilate(stack, radius = 1)
+    tensor<nat8> contracted := try vision.erode(stack, radius = 1)
     print.line(expanded.shape()[0] == 1 and expanded.shape()[1] == 2)
     print.line(expanded[0, 0, 0, 1, 0].item() == nat8(200))
     print.line(contracted[0, 0, 0, 0, 1].item() == nat8(0))
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -268,127 +268,127 @@ cat > "$TMP/downsample.qui" <<'QUI'
 import vision
 
 int len_all(int[] shape)
-    int count = 1
-    for auto extent = shape[]
+    int count := 1
+    for extent := shape[]
         count = count * extent
     return count
 
 // Reference block mean in the documented order: each block row left to right,
 // then the row sums top to bottom, divided once by factor * factor.
 real32 reference_mean(tensor<real32> pixels, int plane, int oy, int ox, int factor)
-    int[] shape = int(pixels.shape())
-    int height = shape[int(len(shape)) - 2]
-    int width = shape[int(len(shape)) - 1]
-    tensor<real32> flat = pixels.reshape([nat(len_all(shape))])
-    real32 total = 0.0
+    int[] shape := int(pixels.shape())
+    int height := shape[int(len(shape)) - 2]
+    int width := shape[int(len(shape)) - 1]
+    tensor<real32> flat := pixels.reshape([nat(len_all(shape))])
+    real32 total := 0.0
     for 0 <= int dy < factor
-        int base = (plane * height + oy * factor + dy) * width + ox * factor
-        real32 row_sum = flat[base].item()
+        int base := (plane * height + oy * factor + dy) * width + ox * factor
+        real32 row_sum := flat[base].item()
         for 1 <= int dx < factor
             row_sum = row_sum + flat[base + dx].item()
         if dy == 0
             total = row_sum
         else
             total = total + row_sum
-    real32 divisor = real32(factor * factor)
+    real32 divisor := real32(factor * factor)
     return total / divisor
 
 // Counts output samples that differ from the reference; `pixels` has any
 // rank >= 3 and the result keeps every leading dimension.
 int mismatches(tensor<real32> pixels, tensor<real32> reduced, int factor)
-    int[] shape = int(pixels.shape())
-    int[] reduced_shape = int(reduced.shape())
-    int rank = int(len(shape))
-    int planes = 1
+    int[] shape := int(pixels.shape())
+    int[] reduced_shape := int(reduced.shape())
+    int rank := int(len(shape))
+    int planes := 1
     for 0 <= int axis < rank - 2
         if reduced_shape[axis] != shape[axis]
             return -1
         planes = planes * shape[axis]
-    int output_height = reduced_shape[rank - 2]
-    int output_width = reduced_shape[rank - 1]
+    int output_height := reduced_shape[rank - 2]
+    int output_width := reduced_shape[rank - 1]
     if output_height != shape[rank - 2] / factor or output_width != shape[rank - 1] / factor
         return -1
-    tensor<real32> flat = reduced.reshape([nat(planes * output_height * output_width)])
-    int count = 0
+    tensor<real32> flat := reduced.reshape([nat(planes * output_height * output_width)])
+    int count := 0
     for 0 <= int plane < planes
         for 0 <= int oy < output_height
             for 0 <= int ox < output_width
-                real32 actual = flat[(plane * output_height + oy) * output_width + ox].item()
+                real32 actual := flat[(plane * output_height + oy) * output_width + ox].item()
                 if actual != reference_mean(pixels, plane, oy, ox, factor)
                     count += 1
     return count
 
 tensor<real32> pattern(int[] shape)
-    int count = len_all(shape)
-    tensor<real32> flat = tensor.zeros<real32>([nat(count)])
+    int count := len_all(shape)
+    tensor<real32> flat := tensor.zeros<real32>([nat(count)])
     for 0 <= int index < count
-        real32 sample = real32((index * 37 + index / 7) % 23)
+        real32 sample := real32((index * 37 + index / 7) % 23)
         flat[index] = sample * real32(0.37) - real32(1.1)
     return flat.reshape(nat(shape))
 
 int | error run()
     // Multiple channels, a leading batch axis, and sizes that leave trailing
     // rows and columns outside every block.
-    tensor<real32> image = pattern([3, 11, 14])
-    tensor<real32> batch = pattern([2, 2, 9, 10])
-    int[] factors = [2, 3, 4]
-    int total_mismatches = 0
-    for auto factor = factors[]
+    tensor<real32> image := pattern([3, 11, 14])
+    tensor<real32> batch := pattern([2, 2, 9, 10])
+    int[] factors := [2, 3, 4]
+    int total_mismatches := 0
+    for factor := factors[]
         total_mismatches += mismatches(image, try vision.downsample_mean(image, factor), factor)
         total_mismatches += mismatches(batch, try vision.downsample_mean(batch, factor), factor)
     print.line(total_mismatches)
 
-    tensor<real32> reduced = try vision.downsample_mean(image, 3)
-    int[] reduced_shape = int(reduced.shape())
+    tensor<real32> reduced := try vision.downsample_mean(image, 3)
+    int[] reduced_shape := int(reduced.shape())
     print.line(len(reduced_shape) == 3 and reduced_shape[0] == 3 and reduced_shape[1] == 3 and reduced_shape[2] == 4)
 
     // Samples outside every complete block never contribute.
-    tensor<real32> edited = image.reshape([3 * 11 * 14])
+    tensor<real32> edited := image.reshape([3 * 11 * 14])
     for 0 <= nat c < 3
         for 0 <= nat y < 11
             edited[(c * 11 + y) * 14 + 13] = real32(1000)
         for 0 <= nat x < 14
             edited[(c * 11 + 10) * 14 + x] = real32(-1000)
-    tensor<real32> edited_reduced = try vision.downsample_mean(edited.reshape([3, 11, 14]), 3)
+    tensor<real32> edited_reduced := try vision.downsample_mean(edited.reshape([3, 11, 14]), 3)
     print.line(mismatches(image, edited_reduced, 3))
 
     // factor 1 keeps every sample; a factor equal to the extent averages the
     // whole axis.
-    tensor<real32> same = try vision.downsample_mean(image, 1)
+    tensor<real32> same := try vision.downsample_mean(image, 1)
     print.line(mismatches(image, same, 1))
-    tensor<real32> column = try vision.downsample_mean(pattern([1, 4, 9]), 4)
+    tensor<real32> column := try vision.downsample_mean(pattern([1, 4, 9]), 4)
     print.line(column.shape()[1] == 1 and column.shape()[2] == 2)
 
     // Untracked non-contiguous views give the same result as their
     // contiguous copy.
-    tensor<real32> transposed = pattern([3, 14, 11]).transpose(1, 2)
-    tensor<real32> from_view = try vision.downsample_mean(transposed, 3)
-    tensor<real32> from_copy = try vision.downsample_mean(transposed.contiguous(), 3)
+    tensor<real32> transposed := pattern([3, 14, 11]).transpose(1, 2)
+    tensor<real32> from_view := try vision.downsample_mean(transposed, 3)
+    tensor<real32> from_copy := try vision.downsample_mean(transposed.contiguous(), 3)
     print.line(transposed.is_contiguous() == false and mismatches(transposed.contiguous(), from_view, 3) == 0 and mismatches(transposed.contiguous(), from_copy, 3) == 0)
 
     // A shrink built from gathers: the mean of factor x factor gathers over
     // the top-left blocks of an 8-bit image equals downsample_mean followed by
     // a crop to those blocks.
-    int factor = 4
-    int height = 8
-    int width = 12
-    tensor<real32> sem = tensor.zeros<real32>([1, 35, 50])
+    int factor := 4
+    int height := 8
+    int width := 12
+    tensor<real32> sem := tensor.zeros<real32>([1, 35, 50])
     for 0 <= nat y < 35
         for 0 <= nat x < 50
-            real32 sample = real32((y * 50 + x) * 97 % 256)
+            real32 sample := real32((y * 50 + x) * 97 % 256)
             sem[0, y, x] = sample
-    tensor<real32> gathered = tensor.zeros([1, nat(height), nat(width)])
-    int[] indices = array(nat(height * width), fill = 0)
+    tensor<real32> gathered := tensor.zeros([1, nat(height), nat(width)])
+    int[] indices := array(nat(height * width), fill = 0)
     for 0 <= int dy < factor
         for 0 <= int dx < factor
             for 0 <= int index < height * width
                 indices[index] = ((index / width) * factor + dy) * 50 + (index % width) * factor + dx
             gathered = gathered + sem.gather(indices, [1, height, width])
-    real32 divisor = real32(factor * factor)
+    real32 divisor := real32(factor * factor)
     gathered = gathered / divisor
-    tensor<real32> blocks = try vision.downsample_mean(sem, factor)
-    tensor<real32> shrunk = try vision.crop(blocks, 0, 0, height, width)
-    int shrink_differences = 0
+    tensor<real32> blocks := try vision.downsample_mean(sem, factor)
+    tensor<real32> shrunk := try vision.crop(blocks, 0, 0, height, width)
+    int shrink_differences := 0
     for 0 <= int y < height
         for 0 <= int x < width
             if shrunk[0, y, x].item() != gathered[0, y, x].item()
@@ -396,7 +396,7 @@ int | error run()
     print.line(shrink_differences)
 
     // nat8 sums exactly and truncates the quotient, like the nat8 blur.
-    tensor<nat8> bytes = tensor.zeros<nat8>([1, 2, 5])
+    tensor<nat8> bytes := tensor.zeros<nat8>([1, 2, 5])
     bytes[0, 0, 0] = nat8(1)
     bytes[0, 0, 1] = nat8(2)
     bytes[0, 1, 0] = nat8(2)
@@ -406,16 +406,16 @@ int | error run()
     bytes[0, 1, 2] = nat8(255)
     bytes[0, 1, 3] = nat8(254)
     bytes[0, 0, 4] = nat8(200)
-    tensor<nat8> small = try vision.downsample_mean(bytes, 2)
+    tensor<nat8> small := try vision.downsample_mean(bytes, 2)
     print.line(small.shape()[1] == 1 and small.shape()[2] == 2)
     print.line(small[0, 0, 0].item())
     print.line(small[0, 0, 1].item())
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
 QUI
@@ -440,45 +440,45 @@ import vision
 import math
 
 tensor<real32> pattern32(int channels, int height, int width, int seed)
-    tensor<real32> value = tensor.zeros<real32>([nat(channels), nat(height), nat(width)])
+    tensor<real32> value := tensor.zeros<real32>([nat(channels), nat(height), nat(width)])
     for 0 <= int c < channels
         for 0 <= int y < height
             for 0 <= int x < width
-                real32 sample = real32((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
+                real32 sample := real32((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / real32(48) - real32(1)
     return value
 
 tensor<real64> pattern64(int channels, int height, int width, int seed)
-    tensor<real64> value = tensor.zeros<real64>([nat(channels), nat(height), nat(width)])
+    tensor<real64> value := tensor.zeros<real64>([nat(channels), nat(height), nat(width)])
     for 0 <= int c < channels
         for 0 <= int y < height
             for 0 <= int x < width
-                real64 sample = real64((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
+                real64 sample := real64((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / 48.0 - 1.0
     return value
 
 void sample32(string label, tensor<real32> value)
-    tensor<real32> flat = value.untrack().cpu().contiguous()
-    int count = 1
-    for auto extent = flat.shape()[]
+    tensor<real32> flat := value.untrack().cpu().contiguous()
+    int count := 1
+    for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
         print.line("{label} {index} {flat[index].item()}")
 
 void sample64(string label, tensor<real64> value)
-    tensor<real64> flat = value.untrack().cpu().contiguous()
-    int count = 1
-    for auto extent = flat.shape()[]
+    tensor<real64> flat := value.untrack().cpu().contiguous()
+    int count := 1
+    for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
         print.line("{label} {index} {flat[index].item()}")
 
 void sample8(string label, tensor<nat8> value)
-    tensor<nat8> flat = value.cpu().contiguous()
-    int count = 1
-    for auto extent = flat.shape()[]
+    tensor<nat8> flat := value.cpu().contiguous()
+    int count := 1
+    for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
@@ -487,17 +487,17 @@ void sample8(string label, tensor<nat8> value)
 int | error run()
     // Factor 3 leaves a row and two columns outside every block, which the
     // spread fills with zeros.
-    tensor<real32> source = pattern32(2, 64, 401, 1).track()
-    tensor<real32> reduced = try vision.downsample_mean(source, 3)
-    tensor<real32> weights = pattern32(2, 21, 133, 2)
+    tensor<real32> source := pattern32(2, 64, 401, 1).track()
+    tensor<real32> reduced := try vision.downsample_mean(source, 3)
+    tensor<real32> weights := pattern32(2, 21, 133, 2)
     math.mean(reduced * weights * reduced).backward(&source, track = true)
-    tensor<real32> first = source.grad
+    tensor<real32> first := source.grad
     sample32("mean32", reduced)
     sample32("grad32", first)
     math.mean(first * first).backward(&source)
     sample32("second32", source.grad)
 
-    tensor<nat8> bytes = tensor.zeros<nat8>([2, 64, 401])
+    tensor<nat8> bytes := tensor.zeros<nat8>([2, 64, 401])
     for 0 <= nat c < 2
         for 0 <= nat y < 64
             for 0 <= nat x < 401
@@ -505,32 +505,32 @@ int | error run()
     sample8("mean8", try vision.downsample_mean(bytes, 3))
 
     // The uint8 filter kernel (CPU only) over rows of several chunks.
-    tensor<int64> taps = tensor.zeros<int64>([3, 3])
+    tensor<int64> taps := tensor.zeros<int64>([3, 3])
     for 0 <= nat ky < 3
         for 0 <= nat kx < 3
             taps[ky, kx] = int64((int(ky) * 3 + int(kx)) % 4 + 1)
-    tensor<nat8> filtered = try vision.filter(bytes, taps, divisor = 9, offset = 3)
+    tensor<nat8> filtered := try vision.filter(bytes, taps, divisor = 9, offset = 3)
     sample8("filter", filtered)
     return 0
 
 int | error run64()
-    tensor<real64> source = pattern64(2, 64, 401, 3).track()
-    tensor<real64> reduced = try vision.downsample_mean(source, 3)
+    tensor<real64> source := pattern64(2, 64, 401, 3).track()
+    tensor<real64> reduced := try vision.downsample_mean(source, 3)
     math.mean(reduced * reduced).backward(&source)
     sample64("mean64", reduced)
     sample64("grad64", source.grad)
     return 0
 
-auto | error result = run()
+int | error result := run()
 match result
     int
-        int ignored = result
+        int ignored := result
     error problem
         print.line(problem)
-auto | error result64 = run64()
+int | error result64 := run64()
 match result64
     int
-        int ignored = result64
+        int ignored := result64
     error problem
         print.line(problem)
 QUI

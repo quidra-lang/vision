@@ -4,21 +4,21 @@ import internal = "./internal.qui"
 
 tensor<T> | error read<T: numeric>(
     string path,
-    int channels = 0
+    int channels := 0
 )
     if channels != 0 and channels != 1 and channels != 3 and channels != 4
         return error("vision.read channels must be 0, 1, 3, or 4", code = "VISION_ARGUMENT")
-    nat64 handle = native.image_open(path, int64(channels))
+    nat64 handle := native.image_open(path, int64(channels))
     if handle == nat64(0)
         return error("vision.read failed to decode the image", code = "VISION_DECODE")
-    int channel_count = int(native.image_channels(handle))
-    int height = int(native.image_height(handle))
-    int width = int(native.image_width(handle))
+    int channel_count := int(native.image_channels(handle))
+    int height := int(native.image_height(handle))
+    int width := int(native.image_width(handle))
     if channel_count <= 0 or height <= 0 or width <= 0
         native.image_close(handle)
         return error("vision.read received invalid image metadata", code = "VISION_DECODE")
-    tensor<T> output = tensor.zeros<T>([nat(channel_count), nat(height), nat(width)])
-    int32 status = native.image_fill<T>(handle, &output)
+    tensor<T> output := tensor.zeros<T>([nat(channel_count), nat(height), nat(width)])
+    int32 status := native.image_fill<T>(handle, &output)
     native.image_close(handle)
     if status != int32(0)
         return error("vision.read failed to materialize the decoded image", code = "VISION_DECODE")
@@ -27,18 +27,18 @@ tensor<T> | error read<T: numeric>(
 void | error write<T: numeric>(
     string path,
     tensor<T> pixels,
-    int quality = 90
+    int quality := 90
 )
     if quality < 1 or quality > 100
         return error("vision.write quality must be between 1 and 100", code = "VISION_ARGUMENT")
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) != 3
         return error("vision.write requires a rank-3 CHW tensor", code = "VISION_SHAPE")
     if shape[0] != 1 and shape[0] != 3 and shape[0] != 4
         return error("vision.write requires 1, 3, or 4 channels", code = "VISION_SHAPE")
     if not pixels.is_contiguous()
         return error("vision.write requires a contiguous tensor", code = "VISION_SHAPE")
-    int32 status = native.image_write<T>(path, pixels, int64(quality))
+    int32 status := native.image_write<T>(path, pixels, int64(quality))
     if status != int32(0)
         return error("vision.write failed; image codecs require a CPU tensor and a supported file extension", code = "VISION_ENCODE")
     return
@@ -50,97 +50,97 @@ tensor<T> | error crop<T>(
     int height,
     int width
 )
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.crop requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.crop requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int input_height = shape[height_axis]
-    int input_width = shape[width_axis]
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int input_height := shape[height_axis]
+    int input_width := shape[width_axis]
     if top < 0 or left < 0 or height <= 0 or width <= 0
         return error("vision.crop requires nonnegative origin and positive size", code = "VISION_ARGUMENT")
     if top >= input_height or left >= input_width
         return error("vision.crop origin is outside the image", code = "VISION_SHAPE")
     if height > input_height - top or width > input_width - left
         return error("vision.crop rectangle exceeds the image", code = "VISION_SHAPE")
-    int planes = 1
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int[] output_shape = shape
+    int[] output_shape := shape
     output_shape[height_axis] = height
     output_shape[width_axis] = width
-    int output_count = planes * height * width
-    int[] indices = array(nat(output_count), fill = 0)
+    int output_count := planes * height * width
+    int[] indices := array(nat(output_count), fill = 0)
     for 0 <= int flat_index < output_count
-        int x = flat_index % width
-        int y = (flat_index / width) % height
-        int plane = flat_index / (height * width)
+        int x := flat_index % width
+        int y := (flat_index / width) % height
+        int plane := flat_index / (height * width)
         indices[flat_index] = (plane * input_height + top + y) * input_width + left + x
     return pixels.gather(indices, output_shape)
 
 tensor<T> | error resize<T>(tensor<T> pixels, int height, int width)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.resize requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.resize requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if height <= 0 or width <= 0
         return error("vision.resize requires positive output dimensions", code = "VISION_ARGUMENT")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int input_height = shape[height_axis]
-    int input_width = shape[width_axis]
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int input_height := shape[height_axis]
+    int input_width := shape[width_axis]
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int[] output_shape = shape
+    int[] output_shape := shape
     output_shape[height_axis] = height
     output_shape[width_axis] = width
-    int output_count = planes * height * width
-    int[] indices = array(nat(output_count), fill = 0)
+    int output_count := planes * height * width
+    int[] indices := array(nat(output_count), fill = 0)
     for 0 <= int flat_index < output_count
-        int x = flat_index % width
-        int y = (flat_index / width) % height
-        int plane = flat_index / (height * width)
-        int source_y = y * input_height / height
-        int source_x = x * input_width / width
+        int x := flat_index % width
+        int y := (flat_index / width) % height
+        int plane := flat_index / (height * width)
+        int source_y := y * input_height / height
+        int source_x := x * input_width / width
         indices[flat_index] = (plane * input_height + source_y) * input_width + source_x
     return pixels.gather(indices, output_shape)
 
 tensor<nat8> | error downsample_mean(tensor<nat8> pixels, int factor)
     if pixels.is_tracked()
         return error("vision.downsample_mean cannot operate on a tracked tensor; call untrack() explicitly", code = "VISION_TRACKED")
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.downsample_mean requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.downsample_mean requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if factor <= 0
         return error("vision.downsample_mean factor must be positive", code = "VISION_ARGUMENT")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
     if factor > shape[height_axis] or factor > shape[width_axis]
         return error("vision.downsample_mean factor exceeds the image height or width", code = "VISION_ARGUMENT")
     if factor == 1
         return pixels
 
-    int[] output_shape = shape
+    int[] output_shape := shape
     output_shape[height_axis] = shape[height_axis] / factor
     output_shape[width_axis] = shape[width_axis] / factor
 
     // Vision owns the CPU and Metal block-mean kernels. Where no Vision kernel
     // can run (other backends), the portable Vision composition stays on the
     // input device; a kernel failure is returned as an error.
-    tensor<nat8> source = pixels
+    tensor<nat8> source := pixels
     if not source.is_contiguous()
         source = source.contiguous()
-    tensor<nat8> native_output = internal.native_output<nat8>(output_shape, pixels.device())
-    int32 native_status = native.downsample_mean<nat8>(
+    tensor<nat8> native_output := internal.native_output<nat8>(output_shape, pixels.device())
+    int32 native_status := native.downsample_mean<nat8>(
         source, &native_output, int64(factor)
     )
     if native_status == int32(0)
@@ -150,22 +150,22 @@ tensor<nat8> | error downsample_mean(tensor<nat8> pixels, int factor)
     return internal.block_mean_u8(source, factor)
 
 tensor<T> | error downsample_mean<T: floating>(tensor<T> pixels, int factor)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.downsample_mean requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.downsample_mean requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if factor <= 0
         return error("vision.downsample_mean factor must be positive", code = "VISION_ARGUMENT")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
     if factor > shape[height_axis] or factor > shape[width_axis]
         return error("vision.downsample_mean factor exceeds the image height or width", code = "VISION_ARGUMENT")
     if factor == 1
         return pixels
 
-    int[] output_shape = shape
+    int[] output_shape := shape
     output_shape[height_axis] = shape[height_axis] / factor
     output_shape[width_axis] = shape[width_axis] / factor
 
@@ -177,14 +177,14 @@ tensor<T> | error downsample_mean<T: floating>(tensor<T> pixels, int factor)
     // composition stays on the input device and keeps the graph; a kernel
     // failure or a dtype the device cannot compute at all (real64 on Metal)
     // is returned as an error.
-    tensor<T> source = pixels
+    tensor<T> source := pixels
     if not source.is_contiguous()
         if source.is_tracked()
             source = internal.dense_copy<T>(source)
         else
             source = source.contiguous()
-    tensor<T> native_output = internal.native_output<T>(output_shape, pixels.device())
-    int32 native_status = native.downsample_mean<T>(
+    tensor<T> native_output := internal.native_output<T>(output_shape, pixels.device())
+    int32 native_status := native.downsample_mean<T>(
         source, &native_output, int64(factor)
     )
     if native_status == int32(0)
@@ -194,243 +194,243 @@ tensor<T> | error downsample_mean<T: floating>(tensor<T> pixels, int factor)
     return internal.block_mean<T>(source, factor)
 
 tensor<T> | error flip_horizontal<T>(tensor<T> pixels)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.flip_horizontal requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.flip_horizontal requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int height = shape[height_axis]
-    int width = shape[width_axis]
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int height := shape[height_axis]
+    int width := shape[width_axis]
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int count = planes * height * width
-    int[] indices = array(nat(count), fill = 0)
+    int count := planes * height * width
+    int[] indices := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % width
-        int y = (flat_index / width) % height
-        int plane = flat_index / (height * width)
+        int x := flat_index % width
+        int y := (flat_index / width) % height
+        int plane := flat_index / (height * width)
         indices[flat_index] = (plane * height + y) * width + (width - 1 - x)
     return pixels.gather(indices, shape)
 
 tensor<T> | error flip_vertical<T>(tensor<T> pixels)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.flip_vertical requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.flip_vertical requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int height = shape[height_axis]
-    int width = shape[width_axis]
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int height := shape[height_axis]
+    int width := shape[width_axis]
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int count = planes * height * width
-    int[] indices = array(nat(count), fill = 0)
+    int count := planes * height * width
+    int[] indices := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % width
-        int y = (flat_index / width) % height
-        int plane = flat_index / (height * width)
+        int x := flat_index % width
+        int y := (flat_index / width) % height
+        int plane := flat_index / (height * width)
         indices[flat_index] = (plane * height + (height - 1 - y)) * width + x
     return pixels.gather(indices, shape)
 
 tensor<T> | error rotate90<T>(tensor<T> pixels)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.rotate90 requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.rotate90 requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int input_height = shape[height_axis]
-    int input_width = shape[width_axis]
-    int output_height = input_width
-    int output_width = input_height
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int input_height := shape[height_axis]
+    int input_width := shape[width_axis]
+    int output_height := input_width
+    int output_width := input_height
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int[] output_shape = shape
+    int[] output_shape := shape
     output_shape[height_axis] = output_height
     output_shape[width_axis] = output_width
-    int count = planes * output_height * output_width
-    int[] indices = array(nat(count), fill = 0)
+    int count := planes * output_height * output_width
+    int[] indices := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % output_width
-        int y = (flat_index / output_width) % output_height
-        int plane = flat_index / (output_height * output_width)
-        int source_y = input_height - 1 - x
-        int source_x = y
+        int x := flat_index % output_width
+        int y := (flat_index / output_width) % output_height
+        int plane := flat_index / (output_height * output_width)
+        int source_y := input_height - 1 - x
+        int source_x := y
         indices[flat_index] = (plane * input_height + source_y) * input_width + source_x
     return pixels.gather(indices, output_shape)
 
 tensor<T> | error rotate180<T>(tensor<T> pixels)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.rotate180 requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.rotate180 requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int height = shape[height_axis]
-    int width = shape[width_axis]
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int height := shape[height_axis]
+    int width := shape[width_axis]
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int count = planes * height * width
-    int[] indices = array(nat(count), fill = 0)
+    int count := planes * height * width
+    int[] indices := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % width
-        int y = (flat_index / width) % height
-        int plane = flat_index / (height * width)
+        int x := flat_index % width
+        int y := (flat_index / width) % height
+        int plane := flat_index / (height * width)
         indices[flat_index] = (plane * height + (height - 1 - y)) * width + (width - 1 - x)
     return pixels.gather(indices, shape)
 
 tensor<T> | error rotate270<T>(tensor<T> pixels)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.rotate270 requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.rotate270 requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int input_height = shape[height_axis]
-    int input_width = shape[width_axis]
-    int output_height = input_width
-    int output_width = input_height
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int input_height := shape[height_axis]
+    int input_width := shape[width_axis]
+    int output_height := input_width
+    int output_width := input_height
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int[] output_shape = shape
+    int[] output_shape := shape
     output_shape[height_axis] = output_height
     output_shape[width_axis] = output_width
-    int count = planes * output_height * output_width
-    int[] indices = array(nat(count), fill = 0)
+    int count := planes * output_height * output_width
+    int[] indices := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % output_width
-        int y = (flat_index / output_width) % output_height
-        int plane = flat_index / (output_height * output_width)
-        int source_y = x
-        int source_x = input_width - 1 - y
+        int x := flat_index % output_width
+        int y := (flat_index / output_width) % output_height
+        int plane := flat_index / (output_height * output_width)
+        int source_y := x
+        int source_x := input_width - 1 - y
         indices[flat_index] = (plane * input_height + source_y) * input_width + source_x
     return pixels.gather(indices, output_shape)
 
 tensor<nat8> | error grayscale(tensor<nat8> pixels)
     if pixels.is_tracked()
         return error("vision.grayscale cannot operate on a tracked tensor; call untrack() explicitly", code = "VISION_TRACKED")
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.grayscale requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.grayscale requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int channel_axis = int(len(shape)) - 3
-    int channels = shape[channel_axis]
+    int channel_axis := int(len(shape)) - 3
+    int channels := shape[channel_axis]
     if channels != 1 and channels != 3 and channels != 4
         return error("vision.grayscale requires 1, 3, or 4 channels", code = "VISION_SHAPE")
 
-    int height = shape[int(len(shape)) - 2]
-    int width = shape[int(len(shape)) - 1]
-    int images = 1
+    int height := shape[int(len(shape)) - 2]
+    int width := shape[int(len(shape)) - 1]
+    int images := 1
     for 0 <= int axis < channel_axis
         images = images * shape[axis]
-    int output_count = images * height * width
-    int[] output_shape = shape
+    int output_count := images * height * width
+    int[] output_shape := shape
     output_shape[channel_axis] = 1
 
-    int[] red_indices = array(nat(output_count), fill = 0)
-    int[] green_indices = array(nat(output_count), fill = 0)
-    int[] blue_indices = array(nat(output_count), fill = 0)
+    int[] red_indices := array(nat(output_count), fill = 0)
+    int[] green_indices := array(nat(output_count), fill = 0)
+    int[] blue_indices := array(nat(output_count), fill = 0)
     for 0 <= int flat_index < output_count
-        int x = flat_index % width
-        int y = (flat_index / width) % height
-        int image_index = flat_index / (height * width)
-        int image_base = image_index * channels * height * width
+        int x := flat_index % width
+        int y := (flat_index / width) % height
+        int image_index := flat_index / (height * width)
+        int image_base := image_index * channels * height * width
         red_indices[flat_index] = image_base + y * width + x
         if channels != 1
             green_indices[flat_index] = image_base + height * width + y * width + x
             blue_indices[flat_index] = image_base + 2 * height * width + y * width + x
 
-    tensor<int64> values = int64(pixels)
-    tensor<int64> red = values.gather(red_indices, output_shape)
+    tensor<int64> values := int64(pixels)
+    tensor<int64> red := values.gather(red_indices, output_shape)
     if channels == 1
         return nat8(red)
 
-    tensor<int64> green = values.gather(green_indices, output_shape)
-    tensor<int64> blue = values.gather(blue_indices, output_shape)
-    tensor<int64> gray = (
+    tensor<int64> green := values.gather(green_indices, output_shape)
+    tensor<int64> blue := values.gather(blue_indices, output_shape)
+    tensor<int64> gray := (
         red * int64(299) + green * int64(587) + blue * int64(114) + int64(500)
     ) / int64(1000)
     return nat8(gray)
 
 tensor<T> | error grayscale<T: floating>(tensor<T> pixels)
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.grayscale requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.grayscale requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int channel_axis = int(len(shape)) - 3
-    int channels = shape[channel_axis]
+    int channel_axis := int(len(shape)) - 3
+    int channels := shape[channel_axis]
     if channels != 1 and channels != 3 and channels != 4
         return error("vision.grayscale requires 1, 3, or 4 channels", code = "VISION_SHAPE")
 
-    int height = shape[int(len(shape)) - 2]
-    int width = shape[int(len(shape)) - 1]
-    int images = 1
+    int height := shape[int(len(shape)) - 2]
+    int width := shape[int(len(shape)) - 1]
+    int images := 1
     for 0 <= int axis < channel_axis
         images = images * shape[axis]
-    int output_count = images * height * width
-    int[] output_shape = shape
+    int output_count := images * height * width
+    int[] output_shape := shape
     output_shape[channel_axis] = 1
 
-    int[] red_indices = array(nat(output_count), fill = 0)
-    int[] green_indices = array(nat(output_count), fill = 0)
-    int[] blue_indices = array(nat(output_count), fill = 0)
+    int[] red_indices := array(nat(output_count), fill = 0)
+    int[] green_indices := array(nat(output_count), fill = 0)
+    int[] blue_indices := array(nat(output_count), fill = 0)
     for 0 <= int flat_index < output_count
-        int x = flat_index % width
-        int y = (flat_index / width) % height
-        int image_index = flat_index / (height * width)
-        int image_base = image_index * channels * height * width
+        int x := flat_index % width
+        int y := (flat_index / width) % height
+        int image_index := flat_index / (height * width)
+        int image_base := image_index * channels * height * width
         red_indices[flat_index] = image_base + y * width + x
         if channels != 1
             green_indices[flat_index] = image_base + height * width + y * width + x
             blue_indices[flat_index] = image_base + 2 * height * width + y * width + x
 
-    tensor<T> red = pixels.gather(red_indices, output_shape)
+    tensor<T> red := pixels.gather(red_indices, output_shape)
     if channels == 1
         return red
-    tensor<T> green = pixels.gather(green_indices, output_shape)
-    tensor<T> blue = pixels.gather(blue_indices, output_shape)
+    tensor<T> green := pixels.gather(green_indices, output_shape)
+    tensor<T> blue := pixels.gather(blue_indices, output_shape)
     return (red * 299.0 + green * 587.0 + blue * 114.0) / 1000.0
 
 tensor<T> | error threshold<T: floating>(
     tensor<T> pixels,
     T cutoff,
-    T low = 0.0,
-    T high = 1.0
+    T low := 0.0,
+    T high := 1.0
 )
     if pixels.is_tracked()
         return error("vision.threshold cannot operate on a tracked tensor; call untrack() explicitly", code = "VISION_TRACKED")
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.threshold requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.threshold requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
 
-    int count = 1
-    for auto dimension = shape[]
+    int count := 1
+    for dimension := shape[]
         count = count * dimension
-    tensor<T> flat = pixels.reshape([nat(count)])
-    tensor<T> result = flat * 0.0 + low
+    tensor<T> flat := pixels.reshape([nat(count)])
+    tensor<T> result := flat * 0.0 + low
     for 0 <= int index < count
         if flat[index].item() >= cutoff
             result[index] = high
@@ -439,34 +439,34 @@ tensor<T> | error threshold<T: floating>(
 tensor<nat8> | error threshold(
     tensor<nat8> pixels,
     nat8 cutoff,
-    nat8 low = nat8(0),
-    nat8 high = nat8(255)
+    nat8 low := nat8(0),
+    nat8 high := nat8(255)
 )
     if pixels.is_tracked()
         return error("vision.threshold cannot operate on a tracked tensor; call untrack() explicitly", code = "VISION_TRACKED")
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.threshold requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.threshold requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
 
-    int cutoff_value = int(cutoff)
-    int low_value = int(low)
-    int high_value = int(high)
-    tensor<int64> values = int64(pixels)
-    int64 mask_offset = int64(256 - cutoff_value)
-    tensor<int64> mask = (values + mask_offset) / int64(256)
-    int64 low_scalar = int64(low_value)
-    int64 range_scalar = int64(high_value - low_value)
-    tensor<int64> result = low_scalar + mask * range_scalar
+    int cutoff_value := int(cutoff)
+    int low_value := int(low)
+    int high_value := int(high)
+    tensor<int64> values := int64(pixels)
+    int64 mask_offset := int64(256 - cutoff_value)
+    tensor<int64> mask := (values + mask_offset) / int64(256)
+    int64 low_scalar := int64(low_value)
+    int64 range_scalar := int64(high_value - low_value)
+    tensor<int64> result := low_scalar + mask * range_scalar
     return nat8(result)
 
-tensor<T> | error blur<T: floating>(tensor<T> pixels, int radius = 1)
-    int[] shape = int(pixels.shape())
+tensor<T> | error blur<T: floating>(tensor<T> pixels, int radius := 1)
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.blur requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.blur requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if radius < 0
@@ -474,31 +474,31 @@ tensor<T> | error blur<T: floating>(tensor<T> pixels, int radius = 1)
     if radius == 0
         return pixels
 
-    int height = shape[int(len(shape)) - 2]
-    int width = shape[int(len(shape)) - 1]
-    int effective_radius = radius
-    int max_radius = height - 1
+    int height := shape[int(len(shape)) - 2]
+    int width := shape[int(len(shape)) - 1]
+    int effective_radius := radius
+    int max_radius := height - 1
     if width - 1 > max_radius
         max_radius = width - 1
     if effective_radius > max_radius
         effective_radius = max_radius
 
-    int side = effective_radius * 2 + 1
-    int kernel_count = side * side
-    int[] kernel_indices = array(nat(kernel_count), fill = 0)
-    tensor<T> ones = pixels * 0.0 + 1.0
-    tensor<T> kernel = ones.gather(kernel_indices, [side, side])
-    tensor<T> totals = internal.convolve2d(pixels, kernel, effective_radius)
-    tensor<T> coverage = internal.convolve2d(ones, kernel, effective_radius)
+    int side := effective_radius * 2 + 1
+    int kernel_count := side * side
+    int[] kernel_indices := array(nat(kernel_count), fill = 0)
+    tensor<T> ones := pixels * 0.0 + 1.0
+    tensor<T> kernel := ones.gather(kernel_indices, [side, side])
+    tensor<T> totals := internal.convolve2d(pixels, kernel, effective_radius)
+    tensor<T> coverage := internal.convolve2d(ones, kernel, effective_radius)
     return totals / coverage
 
-tensor<nat8> | error blur(tensor<nat8> pixels, int radius = 1)
+tensor<nat8> | error blur(tensor<nat8> pixels, int radius := 1)
     if pixels.is_tracked()
         return error("vision.blur cannot operate on a tracked tensor; call untrack() explicitly", code = "VISION_TRACKED")
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.blur requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.blur requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if radius < 0
@@ -506,131 +506,131 @@ tensor<nat8> | error blur(tensor<nat8> pixels, int radius = 1)
     if radius == 0
         return pixels
 
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int height = shape[height_axis]
-    int width = shape[width_axis]
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int height := shape[height_axis]
+    int width := shape[width_axis]
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int max_radius = height - 1
+    int max_radius := height - 1
     if width - 1 > max_radius
         max_radius = width - 1
-    int effective_radius = radius
+    int effective_radius := radius
     if effective_radius > max_radius
         effective_radius = max_radius
 
-    int side = effective_radius * 2 + 1
-    int kernel_count = side * side
-    tensor<int64> values = int64(pixels)
-    int[] kernel_indices = array(nat(kernel_count), fill = 0)
-    tensor<int64> kernel = values.gather(kernel_indices, [side, side])
+    int side := effective_radius * 2 + 1
+    int kernel_count := side * side
+    tensor<int64> values := int64(pixels)
+    int[] kernel_indices := array(nat(kernel_count), fill = 0)
+    tensor<int64> kernel := values.gather(kernel_indices, [side, side])
     kernel = kernel * 0 + 1
 
-    tensor<int64> totals = internal.convolve2d(
+    tensor<int64> totals := internal.convolve2d(
         values, kernel, effective_radius
     )
-    tensor<int64> coverage_source = values * 0 + 1
-    tensor<int64> coverage = internal.convolve2d(
+    tensor<int64> coverage_source := values * 0 + 1
+    tensor<int64> coverage := internal.convolve2d(
         coverage_source, kernel, effective_radius
     )
 
-    int count = planes * height * width
-    tensor<int64> flat_totals = totals.reshape([nat(count)])
-    tensor<int64> flat_coverage = coverage.reshape([nat(count)])
+    int count := planes * height * width
+    tensor<int64> flat_totals := totals.reshape([nat(count)])
+    tensor<int64> flat_coverage := coverage.reshape([nat(count)])
     for 0 <= int index < count
         flat_totals[index] = flat_totals[index].item() / flat_coverage[index].item()
 
-    tensor<nat8> converted = try nat8(flat_totals)
+    tensor<nat8> converted := try nat8(flat_totals)
     return converted.reshape(nat(shape))
 
 tensor<T> | error filter<T: floating, K: floating>(
     tensor<T> pixels,
     tensor<K> kernel,
-    K divisor = 1.0,
-    K offset = 0.0
+    K divisor := 1.0,
+    K offset := 0.0
 )
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.filter requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.filter requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if divisor == 0.0
         return error("vision.filter divisor must not be zero", code = "VISION_ARGUMENT")
-    int[] kernel_shape = int(kernel.shape())
+    int[] kernel_shape := int(kernel.shape())
     if len(kernel_shape) != 2
         return error("vision.filter requires a rank-2 kernel", code = "VISION_SHAPE")
     if kernel_shape[0] <= 0 or kernel_shape[1] <= 0
         return error("vision.filter requires positive kernel dimensions", code = "VISION_SHAPE")
 
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int height = shape[height_axis]
-    int width = shape[width_axis]
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int height := shape[height_axis]
+    int width := shape[width_axis]
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int kernel_height = kernel_shape[0]
-    int kernel_width = kernel_shape[1]
-    int center_y = kernel_height / 2
-    int center_x = kernel_width / 2
-    int padding = center_y
+    int kernel_height := kernel_shape[0]
+    int kernel_width := kernel_shape[1]
+    int center_y := kernel_height / 2
+    int center_x := kernel_width / 2
+    int padding := center_y
     if center_x > padding
         padding = center_x
 
-    int kernel_count = kernel_height * kernel_width
-    int[] kernel_indices = array(nat(kernel_count), fill = 0)
+    int kernel_count := kernel_height * kernel_width
+    int[] kernel_indices := array(nat(kernel_count), fill = 0)
     for 0 <= int flat_index < kernel_count
-        int x = flat_index % kernel_width
-        int y = flat_index / kernel_width
+        int x := flat_index % kernel_width
+        int y := flat_index / kernel_width
         kernel_indices[flat_index] = (
             (kernel_height - 1 - y) * kernel_width
             + kernel_width - 1 - x
         )
-    tensor<T> typed_kernel = kernel
-    T typed_divisor = divisor
-    T typed_offset = offset
-    tensor<T> flipped_kernel = typed_kernel.gather(
+    tensor<T> typed_kernel := kernel
+    T typed_divisor := divisor
+    T typed_offset := offset
+    tensor<T> flipped_kernel := typed_kernel.gather(
         kernel_indices, [kernel_height, kernel_width]
     )
-    tensor<T> expanded = internal.convolve2d(pixels, flipped_kernel, padding)
-    int[] expanded_shape = int(expanded.shape())
-    int expanded_height = expanded_shape[height_axis]
-    int expanded_width = expanded_shape[width_axis]
-    int crop_top = padding - center_y
-    int crop_left = padding - center_x
-    int input_count = planes * height * width
-    int[] filtered_indices = array(nat(input_count), fill = 0)
+    tensor<T> expanded := internal.convolve2d(pixels, flipped_kernel, padding)
+    int[] expanded_shape := int(expanded.shape())
+    int expanded_height := expanded_shape[height_axis]
+    int expanded_width := expanded_shape[width_axis]
+    int crop_top := padding - center_y
+    int crop_left := padding - center_x
+    int input_count := planes * height * width
+    int[] filtered_indices := array(nat(input_count), fill = 0)
     for 0 <= int flat_index < input_count
-        int x = flat_index % width
-        int remaining = flat_index / width
-        int y = remaining % height
-        int plane = remaining / height
+        int x := flat_index % width
+        int remaining := flat_index / width
+        int y := remaining % height
+        int plane := remaining / height
         filtered_indices[flat_index] = (
             (plane * expanded_height + crop_top + y) * expanded_width
             + crop_left + x
         )
-    tensor<T> filtered = expanded.gather(filtered_indices, shape)
+    tensor<T> filtered := expanded.gather(filtered_indices, shape)
     return filtered / typed_divisor + typed_offset
 
 tensor<nat8> | error filter(
     tensor<nat8> pixels,
     tensor<int64> kernel,
-    int divisor = 1,
-    int offset = 0
+    int divisor := 1,
+    int offset := 0
 )
     if pixels.is_tracked()
         return error("vision.filter cannot operate on a tracked tensor; call untrack() explicitly", code = "VISION_TRACKED")
-    int[] shape = int(pixels.shape())
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.filter requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.filter requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if divisor == 0
         return error("vision.filter divisor must not be zero", code = "VISION_ARGUMENT")
-    int[] kernel_shape = int(kernel.shape())
+    int[] kernel_shape := int(kernel.shape())
     if len(kernel_shape) != 2
         return error("vision.filter requires a rank-2 kernel", code = "VISION_SHAPE")
     if kernel_shape[0] <= 0 or kernel_shape[1] <= 0
@@ -638,232 +638,232 @@ tensor<nat8> | error filter(
 
     // Vision owns the CPU nat8 filter kernel. Unsupported layout/device cases
     // fall through to the portable Vision implementation below.
-    tensor<nat8> native_output = tensor.zeros<nat8>(nat(shape))
-    int32 native_status = native.filter_u8(
+    tensor<nat8> native_output := tensor.zeros<nat8>(nat(shape))
+    int32 native_status := native.filter_u8(
         pixels, kernel, &native_output, int64(divisor), int64(offset)
     )
     if native_status == int32(0)
         return native_output
 
-    int height_axis = int(len(shape)) - 2
-    int width_axis = int(len(shape)) - 1
-    int height = shape[height_axis]
-    int width = shape[width_axis]
-    int planes = 1
+    int height_axis := int(len(shape)) - 2
+    int width_axis := int(len(shape)) - 1
+    int height := shape[height_axis]
+    int width := shape[width_axis]
+    int planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
-    int kernel_height = kernel_shape[0]
-    int kernel_width = kernel_shape[1]
-    int center_y = kernel_height / 2
-    int center_x = kernel_width / 2
-    int padding = center_y
+    int kernel_height := kernel_shape[0]
+    int kernel_width := kernel_shape[1]
+    int center_y := kernel_height / 2
+    int center_x := kernel_width / 2
+    int padding := center_y
     if center_x > padding
         padding = center_x
 
-    tensor<int64> values = int64(pixels)
-    int kernel_count = kernel_height * kernel_width
-    int[] kernel_indices = array(nat(kernel_count), fill = 0)
+    tensor<int64> values := int64(pixels)
+    int kernel_count := kernel_height * kernel_width
+    int[] kernel_indices := array(nat(kernel_count), fill = 0)
     for 0 <= int flat_index < kernel_count
-        int x = flat_index % kernel_width
-        int y = flat_index / kernel_width
+        int x := flat_index % kernel_width
+        int y := flat_index / kernel_width
         kernel_indices[flat_index] = (
             (kernel_height - 1 - y) * kernel_width
             + kernel_width - 1 - x
         )
-    tensor<int64> flipped_kernel = kernel.gather(
+    tensor<int64> flipped_kernel := kernel.gather(
         kernel_indices, [kernel_height, kernel_width]
     )
-    tensor<int64> expanded = internal.convolve2d(
+    tensor<int64> expanded := internal.convolve2d(
         values, flipped_kernel, padding
     )
-    int[] expanded_shape = int(expanded.shape())
-    int expanded_height = expanded_shape[height_axis]
-    int expanded_width = expanded_shape[width_axis]
-    int crop_top = padding - center_y
-    int crop_left = padding - center_x
-    int input_count = planes * height * width
-    int[] filtered_indices = array(nat(input_count), fill = 0)
+    int[] expanded_shape := int(expanded.shape())
+    int expanded_height := expanded_shape[height_axis]
+    int expanded_width := expanded_shape[width_axis]
+    int crop_top := padding - center_y
+    int crop_left := padding - center_x
+    int input_count := planes * height * width
+    int[] filtered_indices := array(nat(input_count), fill = 0)
     for 0 <= int flat_index < input_count
-        int x = flat_index % width
-        int remaining = flat_index / width
-        int y = remaining % height
-        int plane = remaining / height
+        int x := flat_index % width
+        int remaining := flat_index / width
+        int y := remaining % height
+        int plane := remaining / height
         filtered_indices[flat_index] = (
             (plane * expanded_height + crop_top + y) * expanded_width
             + crop_left + x
         )
-    tensor<int64> filtered = expanded.gather(filtered_indices, shape)
-    int[] result_shape = int(filtered.shape())
+    tensor<int64> filtered := expanded.gather(filtered_indices, shape)
+    int[] result_shape := int(filtered.shape())
 
-    tensor<int64> flat = filtered.reshape([nat(input_count)])
+    tensor<int64> flat := filtered.reshape([nat(input_count)])
     for 0 <= int index < input_count
-        int adjusted = int(flat[index].item()) / divisor + offset
+        int adjusted := int(flat[index].item()) / divisor + offset
         if adjusted < 0
             adjusted = 0
         if adjusted > 255
             adjusted = 255
         flat[index] = int64(adjusted)
 
-    tensor<nat8> converted = try nat8(flat)
+    tensor<nat8> converted := try nat8(flat)
     return converted.reshape(nat(result_shape))
 
-tensor<T> | error dilate<T>(tensor<T> pixels, int radius = 1)
-    int[] shape = int(pixels.shape())
+tensor<T> | error dilate<T>(tensor<T> pixels, int radius := 1)
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.dilate requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.dilate requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if radius < 0
         return error("vision.dilate radius must be nonnegative", code = "VISION_ARGUMENT")
 
-    int height = shape[int(len(shape)) - 2]
-    int width = shape[int(len(shape)) - 1]
-    int count = 1
-    for auto dimension = shape[]
+    int height := shape[int(len(shape)) - 2]
+    int width := shape[int(len(shape)) - 1]
+    int count := 1
+    for dimension := shape[]
         if count > 9223372036854775807 / dimension
             return error("vision.dilate tensor shape is too large", code = "VISION_SIZE")
         count = count * dimension
 
-    int[] flat_indices = array(nat(count), fill = 0)
+    int[] flat_indices := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
         flat_indices[flat_index] = flat_index
-    tensor<T> flat = pixels.gather(flat_indices, [count])
+    tensor<T> flat := pixels.gather(flat_indices, [count])
 
-    int horizontal_radius = radius
+    int horizontal_radius := radius
     if horizontal_radius > width - 1
         horizontal_radius = width - 1
-    int horizontal_width = horizontal_radius * 2 + 1
+    int horizontal_width := horizontal_radius * 2 + 1
     if count > 9223372036854775807 / horizontal_width
         return error("vision.dilate horizontal workspace is too large", code = "VISION_SIZE")
-    int[] horizontal_indices = array(nat(count * horizontal_width), fill = 0)
-    int[] selected = array(nat(count), fill = 0)
+    int[] horizontal_indices := array(nat(count * horizontal_width), fill = 0)
+    int[] selected := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % width
-        int remaining = flat_index / width
-        int y = remaining % height
-        int plane = remaining / height
-        int center = (plane * height + y) * width + x
+        int x := flat_index % width
+        int remaining := flat_index / width
+        int y := remaining % height
+        int plane := remaining / height
+        int center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * horizontal_width
         for 0 <= int offset < horizontal_width
-            int source_x = x + offset - horizontal_radius
-            int source = center
+            int source_x := x + offset - horizontal_radius
+            int source := center
             if source_x >= 0 and source_x < width
                 source = (plane * height + y) * width + source_x
             horizontal_indices[flat_index * horizontal_width + offset] = source
 
-    tensor<T> horizontal_windows = flat.gather(
+    tensor<T> horizontal_windows := flat.gather(
         horizontal_indices,
         [count, horizontal_width]
     )
-    tensor<T> horizontal_extrema = math.max_last<T>(horizontal_windows)
-    tensor<T> horizontal = horizontal_extrema.gather(selected, [count])
+    tensor<T> horizontal_extrema := math.max_last<T>(horizontal_windows)
+    tensor<T> horizontal := horizontal_extrema.gather(selected, [count])
 
-    int vertical_radius = radius
+    int vertical_radius := radius
     if vertical_radius > height - 1
         vertical_radius = height - 1
-    int vertical_width = vertical_radius * 2 + 1
+    int vertical_width := vertical_radius * 2 + 1
     if count > 9223372036854775807 / vertical_width
         return error("vision.dilate vertical workspace is too large", code = "VISION_SIZE")
-    int[] vertical_indices = array(nat(count * vertical_width), fill = 0)
+    int[] vertical_indices := array(nat(count * vertical_width), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % width
-        int remaining = flat_index / width
-        int y = remaining % height
-        int plane = remaining / height
-        int center = (plane * height + y) * width + x
+        int x := flat_index % width
+        int remaining := flat_index / width
+        int y := remaining % height
+        int plane := remaining / height
+        int center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * vertical_width
         for 0 <= int offset < vertical_width
-            int source_y = y + offset - vertical_radius
-            int source = center
+            int source_y := y + offset - vertical_radius
+            int source := center
             if source_y >= 0 and source_y < height
                 source = (plane * height + source_y) * width + x
             vertical_indices[flat_index * vertical_width + offset] = source
 
-    tensor<T> vertical_windows = horizontal.gather(
+    tensor<T> vertical_windows := horizontal.gather(
         vertical_indices,
         [count, vertical_width]
     )
-    tensor<T> vertical_extrema = math.max_last<T>(vertical_windows)
+    tensor<T> vertical_extrema := math.max_last<T>(vertical_windows)
     return vertical_extrema.gather(selected, [count]).reshape(nat(shape))
 
-tensor<T> | error erode<T>(tensor<T> pixels, int radius = 1)
-    int[] shape = int(pixels.shape())
+tensor<T> | error erode<T>(tensor<T> pixels, int radius := 1)
+    int[] shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.erode requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
-    for auto dimension = shape[]
+    for dimension := shape[]
         if dimension <= 0
             return error("vision.erode requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
     if radius < 0
         return error("vision.erode radius must be nonnegative", code = "VISION_ARGUMENT")
 
-    int height = shape[int(len(shape)) - 2]
-    int width = shape[int(len(shape)) - 1]
-    int count = 1
-    for auto dimension = shape[]
+    int height := shape[int(len(shape)) - 2]
+    int width := shape[int(len(shape)) - 1]
+    int count := 1
+    for dimension := shape[]
         if count > 9223372036854775807 / dimension
             return error("vision.erode tensor shape is too large", code = "VISION_SIZE")
         count = count * dimension
 
-    int[] flat_indices = array(nat(count), fill = 0)
+    int[] flat_indices := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
         flat_indices[flat_index] = flat_index
-    tensor<T> flat = pixels.gather(flat_indices, [count])
+    tensor<T> flat := pixels.gather(flat_indices, [count])
 
-    int horizontal_radius = radius
+    int horizontal_radius := radius
     if horizontal_radius > width - 1
         horizontal_radius = width - 1
-    int horizontal_width = horizontal_radius * 2 + 1
+    int horizontal_width := horizontal_radius * 2 + 1
     if count > 9223372036854775807 / horizontal_width
         return error("vision.erode horizontal workspace is too large", code = "VISION_SIZE")
-    int[] horizontal_indices = array(nat(count * horizontal_width), fill = 0)
-    int[] selected = array(nat(count), fill = 0)
+    int[] horizontal_indices := array(nat(count * horizontal_width), fill = 0)
+    int[] selected := array(nat(count), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % width
-        int remaining = flat_index / width
-        int y = remaining % height
-        int plane = remaining / height
-        int center = (plane * height + y) * width + x
+        int x := flat_index % width
+        int remaining := flat_index / width
+        int y := remaining % height
+        int plane := remaining / height
+        int center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * horizontal_width
         for 0 <= int offset < horizontal_width
-            int source_x = x + offset - horizontal_radius
-            int source = center
+            int source_x := x + offset - horizontal_radius
+            int source := center
             if source_x >= 0 and source_x < width
                 source = (plane * height + y) * width + source_x
             horizontal_indices[flat_index * horizontal_width + offset] = source
 
-    tensor<T> horizontal_windows = flat.gather(
+    tensor<T> horizontal_windows := flat.gather(
         horizontal_indices,
         [count, horizontal_width]
     )
-    tensor<T> horizontal_extrema = math.min_last<T>(horizontal_windows)
-    tensor<T> horizontal = horizontal_extrema.gather(selected, [count])
+    tensor<T> horizontal_extrema := math.min_last<T>(horizontal_windows)
+    tensor<T> horizontal := horizontal_extrema.gather(selected, [count])
 
-    int vertical_radius = radius
+    int vertical_radius := radius
     if vertical_radius > height - 1
         vertical_radius = height - 1
-    int vertical_width = vertical_radius * 2 + 1
+    int vertical_width := vertical_radius * 2 + 1
     if count > 9223372036854775807 / vertical_width
         return error("vision.erode vertical workspace is too large", code = "VISION_SIZE")
-    int[] vertical_indices = array(nat(count * vertical_width), fill = 0)
+    int[] vertical_indices := array(nat(count * vertical_width), fill = 0)
     for 0 <= int flat_index < count
-        int x = flat_index % width
-        int remaining = flat_index / width
-        int y = remaining % height
-        int plane = remaining / height
-        int center = (plane * height + y) * width + x
+        int x := flat_index % width
+        int remaining := flat_index / width
+        int y := remaining % height
+        int plane := remaining / height
+        int center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * vertical_width
         for 0 <= int offset < vertical_width
-            int source_y = y + offset - vertical_radius
-            int source = center
+            int source_y := y + offset - vertical_radius
+            int source := center
             if source_y >= 0 and source_y < height
                 source = (plane * height + source_y) * width + x
             vertical_indices[flat_index * vertical_width + offset] = source
 
-    tensor<T> vertical_windows = horizontal.gather(
+    tensor<T> vertical_windows := horizontal.gather(
         vertical_indices,
         [count, vertical_width]
     )
-    tensor<T> vertical_extrema = math.min_last<T>(vertical_windows)
+    tensor<T> vertical_extrema := math.min_last<T>(vertical_windows)
     return vertical_extrema.gather(selected, [count]).reshape(nat(shape))
 
