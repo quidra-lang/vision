@@ -67,14 +67,14 @@ tensor<T> | error crop<T>(
     if height > input_height - top or width > input_width - left
         return error("vision.crop rectangle exceeds the image", code = "VISION_SHAPE")
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
     output_shape[height_axis] = height
     output_shape[width_axis] = width
     output_count := planes * height * width
     indices := array(nat(output_count), fill = 0)
-    for 0 <= int flat_index < output_count
+    for: 0 <= int flat_index < output_count
         x := flat_index % width
         y := (flat_index / width) % height
         plane := flat_index / (height * width)
@@ -95,14 +95,14 @@ tensor<T> | error resize<T>(tensor<T> pixels, int height, int width)
     input_height := shape[height_axis]
     input_width := shape[width_axis]
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
     output_shape[height_axis] = height
     output_shape[width_axis] = width
     output_count := planes * height * width
     indices := array(nat(output_count), fill = 0)
-    for 0 <= int flat_index < output_count
+    for: 0 <= int flat_index < output_count
         x := flat_index % width
         y := (flat_index / width) % height
         plane := flat_index / (height * width)
@@ -205,11 +205,11 @@ tensor<T> | error flip_horizontal<T>(tensor<T> pixels)
     height := shape[height_axis]
     width := shape[width_axis]
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     count := planes * height * width
     indices := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % width
         y := (flat_index / width) % height
         plane := flat_index / (height * width)
@@ -228,11 +228,11 @@ tensor<T> | error flip_vertical<T>(tensor<T> pixels)
     height := shape[height_axis]
     width := shape[width_axis]
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     count := planes * height * width
     indices := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % width
         y := (flat_index / width) % height
         plane := flat_index / (height * width)
@@ -253,14 +253,14 @@ tensor<T> | error rotate90<T>(tensor<T> pixels)
     output_height := input_width
     output_width := input_height
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
     output_shape[height_axis] = output_height
     output_shape[width_axis] = output_width
     count := planes * output_height * output_width
     indices := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % output_width
         y := (flat_index / output_width) % output_height
         plane := flat_index / (output_height * output_width)
@@ -281,11 +281,11 @@ tensor<T> | error rotate180<T>(tensor<T> pixels)
     height := shape[height_axis]
     width := shape[width_axis]
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     count := planes * height * width
     indices := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % width
         y := (flat_index / width) % height
         plane := flat_index / (height * width)
@@ -306,14 +306,14 @@ tensor<T> | error rotate270<T>(tensor<T> pixels)
     output_height := input_width
     output_width := input_height
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
     output_shape[height_axis] = output_height
     output_shape[width_axis] = output_width
     count := planes * output_height * output_width
     indices := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % output_width
         y := (flat_index / output_width) % output_height
         plane := flat_index / (output_height * output_width)
@@ -339,7 +339,7 @@ tensor<nat8> | error grayscale(tensor<nat8> pixels)
     height := shape[int(len(shape)) - 2]
     width := shape[int(len(shape)) - 1]
     images := 1
-    for 0 <= int axis < channel_axis
+    for: 0 <= int axis < channel_axis
         images = images * shape[axis]
     output_count := images * height * width
     output_shape := shape
@@ -348,7 +348,7 @@ tensor<nat8> | error grayscale(tensor<nat8> pixels)
     red_indices := array(nat(output_count), fill = 0)
     green_indices := array(nat(output_count), fill = 0)
     blue_indices := array(nat(output_count), fill = 0)
-    for 0 <= int flat_index < output_count
+    for: 0 <= int flat_index < output_count
         x := flat_index % width
         y := (flat_index / width) % height
         image_index := flat_index / (height * width)
@@ -385,7 +385,7 @@ tensor<T> | error grayscale<T: floating>(tensor<T> pixels)
     height := shape[int(len(shape)) - 2]
     width := shape[int(len(shape)) - 1]
     images := 1
-    for 0 <= int axis < channel_axis
+    for: 0 <= int axis < channel_axis
         images = images * shape[axis]
     output_count := images * height * width
     output_shape := shape
@@ -394,7 +394,7 @@ tensor<T> | error grayscale<T: floating>(tensor<T> pixels)
     red_indices := array(nat(output_count), fill = 0)
     green_indices := array(nat(output_count), fill = 0)
     blue_indices := array(nat(output_count), fill = 0)
-    for 0 <= int flat_index < output_count
+    for: 0 <= int flat_index < output_count
         x := flat_index % width
         y := (flat_index / width) % height
         image_index := flat_index / (height * width)
@@ -431,7 +431,7 @@ tensor<T> | error threshold<T: floating>(
         count = count * dimension
     flat := pixels.reshape([nat(count)])
     result := flat * 0.0 + low
-    for 0 <= int index < count
+    for: 0 <= int index < count
         if flat[index].item() >= cutoff
             result[index] = high
     return result.reshape(nat(shape))
@@ -511,7 +511,7 @@ tensor<nat8> | error blur(tensor<nat8> pixels, int radius := 1)
     height := shape[height_axis]
     width := shape[width_axis]
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     max_radius := height - 1
     if width - 1 > max_radius
@@ -538,7 +538,7 @@ tensor<nat8> | error blur(tensor<nat8> pixels, int radius := 1)
     count := planes * height * width
     flat_totals := totals.reshape([nat(count)])
     flat_coverage := coverage.reshape([nat(count)])
-    for 0 <= int index < count
+    for: 0 <= int index < count
         flat_totals[index] = flat_totals[index].item() / flat_coverage[index].item()
 
     converted := try nat8(flat_totals)
@@ -569,7 +569,7 @@ tensor<T> | error filter<T: floating, K: floating>(
     height := shape[height_axis]
     width := shape[width_axis]
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     kernel_height := kernel_shape[0]
     kernel_width := kernel_shape[1]
@@ -581,7 +581,7 @@ tensor<T> | error filter<T: floating, K: floating>(
 
     kernel_count := kernel_height * kernel_width
     kernel_indices := array(nat(kernel_count), fill = 0)
-    for 0 <= int flat_index < kernel_count
+    for: 0 <= int flat_index < kernel_count
         x := flat_index % kernel_width
         y := flat_index / kernel_width
         kernel_indices[flat_index] = (
@@ -602,7 +602,7 @@ tensor<T> | error filter<T: floating, K: floating>(
     crop_left := padding - center_x
     input_count := planes * height * width
     filtered_indices := array(nat(input_count), fill = 0)
-    for 0 <= int flat_index < input_count
+    for: 0 <= int flat_index < input_count
         x := flat_index % width
         remaining := flat_index / width
         y := remaining % height
@@ -650,7 +650,7 @@ tensor<nat8> | error filter(
     height := shape[height_axis]
     width := shape[width_axis]
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
     kernel_height := kernel_shape[0]
     kernel_width := kernel_shape[1]
@@ -663,7 +663,7 @@ tensor<nat8> | error filter(
     values := int64(pixels)
     kernel_count := kernel_height * kernel_width
     kernel_indices := array(nat(kernel_count), fill = 0)
-    for 0 <= int flat_index < kernel_count
+    for: 0 <= int flat_index < kernel_count
         x := flat_index % kernel_width
         y := flat_index / kernel_width
         kernel_indices[flat_index] = (
@@ -683,7 +683,7 @@ tensor<nat8> | error filter(
     crop_left := padding - center_x
     input_count := planes * height * width
     filtered_indices := array(nat(input_count), fill = 0)
-    for 0 <= int flat_index < input_count
+    for: 0 <= int flat_index < input_count
         x := flat_index % width
         remaining := flat_index / width
         y := remaining % height
@@ -696,7 +696,7 @@ tensor<nat8> | error filter(
     result_shape := int(filtered.shape())
 
     flat := filtered.reshape([nat(input_count)])
-    for 0 <= int index < input_count
+    for: 0 <= int index < input_count
         adjusted := flat[index].item() / divisor + offset
         if adjusted < 0
             adjusted = 0
@@ -726,7 +726,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, radius := 1)
         count = count * dimension
 
     flat_indices := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         flat_indices[flat_index] = flat_index
     flat := pixels.gather(flat_indices, [count])
 
@@ -738,14 +738,14 @@ tensor<T> | error dilate<T>(tensor<T> pixels, radius := 1)
         return error("vision.dilate horizontal workspace is too large", code = "VISION_SIZE")
     horizontal_indices := array(nat(count * horizontal_width), fill = 0)
     selected := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % width
         remaining := flat_index / width
         y := remaining % height
         plane := remaining / height
         center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * horizontal_width
-        for 0 <= int offset < horizontal_width
+        for: 0 <= int offset < horizontal_width
             source_x := x + offset - horizontal_radius
             source := center
             if source_x >= 0 and source_x < width
@@ -766,14 +766,14 @@ tensor<T> | error dilate<T>(tensor<T> pixels, radius := 1)
     if count > 9223372036854775807 / vertical_width
         return error("vision.dilate vertical workspace is too large", code = "VISION_SIZE")
     vertical_indices := array(nat(count * vertical_width), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % width
         remaining := flat_index / width
         y := remaining % height
         plane := remaining / height
         center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * vertical_width
-        for 0 <= int offset < vertical_width
+        for: 0 <= int offset < vertical_width
             source_y := y + offset - vertical_radius
             source := center
             if source_y >= 0 and source_y < height
@@ -806,7 +806,7 @@ tensor<T> | error erode<T>(tensor<T> pixels, radius := 1)
         count = count * dimension
 
     flat_indices := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         flat_indices[flat_index] = flat_index
     flat := pixels.gather(flat_indices, [count])
 
@@ -818,14 +818,14 @@ tensor<T> | error erode<T>(tensor<T> pixels, radius := 1)
         return error("vision.erode horizontal workspace is too large", code = "VISION_SIZE")
     horizontal_indices := array(nat(count * horizontal_width), fill = 0)
     selected := array(nat(count), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % width
         remaining := flat_index / width
         y := remaining % height
         plane := remaining / height
         center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * horizontal_width
-        for 0 <= int offset < horizontal_width
+        for: 0 <= int offset < horizontal_width
             source_x := x + offset - horizontal_radius
             source := center
             if source_x >= 0 and source_x < width
@@ -846,14 +846,14 @@ tensor<T> | error erode<T>(tensor<T> pixels, radius := 1)
     if count > 9223372036854775807 / vertical_width
         return error("vision.erode vertical workspace is too large", code = "VISION_SIZE")
     vertical_indices := array(nat(count * vertical_width), fill = 0)
-    for 0 <= int flat_index < count
+    for: 0 <= int flat_index < count
         x := flat_index % width
         remaining := flat_index / width
         y := remaining % height
         plane := remaining / height
         center := (plane * height + y) * width + x
         selected[flat_index] = flat_index * vertical_width
-        for 0 <= int offset < vertical_width
+        for: 0 <= int offset < vertical_width
             source_y := y + offset - vertical_radius
             source := center
             if source_y >= 0 and source_y < height

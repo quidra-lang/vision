@@ -274,10 +274,10 @@ import composition = "./vision_internal.qui"
 int differences(tensor<real32> left, tensor<real32> right)
     int[] shape := int(left.shape())
     int count := 0
-    for 0 <= int n < shape[0]
-        for 0 <= int c < shape[1]
-            for 0 <= int y < shape[2]
-                for 0 <= int x < shape[3]
+    for: 0 <= int n < shape[0]
+        for: 0 <= int c < shape[1]
+            for: 0 <= int y < shape[2]
+                for: 0 <= int x < shape[3]
                     if left[n, c, y, x].item() != right[n, c, y, x].item()
                         count += 1
     return count
@@ -285,10 +285,10 @@ int differences(tensor<real32> left, tensor<real32> right)
 tensor<real32> pattern(int batch, int channels, int height, int width)
     tensor<real32> values := tensor.zeros<real32>([nat(batch), nat(channels), nat(height), nat(width)])
     int index := 0
-    for 0 <= int n < batch
-        for 0 <= int c < channels
-            for 0 <= int y < height
-                for 0 <= int x < width
+    for: 0 <= int n < batch
+        for: 0 <= int c < channels
+            for: 0 <= int y < height
+                for: 0 <= int x < width
                     real32 sample := real32((index * 29 + 3) % 19)
                     values[n, c, y, x] = sample * real32(0.21) - real32(1.7)
                     index += 1

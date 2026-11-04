@@ -214,9 +214,9 @@ import composition = "./vision_internal.qui"
 int differences(tensor<real32> left, tensor<real32> right)
     int[] shape := int(left.shape())
     int count := 0
-    for 0 <= int c < shape[0]
-        for 0 <= int y < shape[1]
-            for 0 <= int x < shape[2]
+    for: 0 <= int c < shape[0]
+        for: 0 <= int y < shape[1]
+            for: 0 <= int x < shape[2]
                 if left[c, y, x].item() != right[c, y, x].item()
                     count += 1
     return count
@@ -225,9 +225,9 @@ int | error run()
     tensor<real32> host := tensor.zeros<real32>([2, 7, 9])
     tensor<nat8> host_bytes := tensor.zeros<nat8>([2, 7, 9])
     int index := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 7
-            for 0 <= nat x < 9
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 7
+            for: 0 <= nat x < 9
                 real32 sample := real32((index * 13) % 11)
                 host[c, y, x] = sample * real32(0.3) - real32(1)
                 int byte_value := (index * 57) % 256
@@ -245,9 +245,9 @@ int | error run()
     println(bytes_on_device.device())
     tensor<nat8> bytes_back := bytes_on_device.cpu()
     int byte_differences := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 3
-            for 0 <= nat x < 4
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 3
+            for: 0 <= nat x < 4
                 if bytes_back[c, y, x].item() != bytes_on_host[c, y, x].item()
                     byte_differences += 1
     println(byte_differences)
@@ -278,9 +278,9 @@ int | error run()
     // A strided upstream gradient (transpose after the block mean) reaches
     // the device gradient kernel densely and matches the CPU.
     tensor<real32> weights := tensor.zeros<real32>([2, 3, 2])
-    for 0 <= nat c < 2
-        for 0 <= nat y < 3
-            for 0 <= nat x < 2
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 3
+            for: 0 <= nat x < 2
                 nat weight_index := c * 6 + y * 2 + x + 1
                 real32 weight_sample := real32(weight_index)
                 weights[c, y, x] = weight_sample * real32(0.25)
@@ -304,9 +304,9 @@ int | error run()
     println(portable_bytes_device.device())
     tensor<nat8> portable_bytes_back := portable_bytes_device.cpu()
     int portable_byte_differences := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 3
-            for 0 <= nat x < 4
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 3
+            for: 0 <= nat x < 4
                 if portable_bytes_host[c, y, x].item() != bytes_on_host[c, y, x].item()
                     portable_byte_differences += 1
                 if portable_bytes_back[c, y, x].item() != bytes_on_host[c, y, x].item()
@@ -347,18 +347,18 @@ import math
 
 tensor<real32> pattern32(int channels, int height, int width, int seed)
     tensor<real32> value := tensor.zeros<real32>([nat(channels), nat(height), nat(width)])
-    for 0 <= int c < channels
-        for 0 <= int y < height
-            for 0 <= int x < width
+    for: 0 <= int c < channels
+        for: 0 <= int y < height
+            for: 0 <= int x < width
                 real32 sample := real32((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / real32(48) - real32(1)
     return value
 
 tensor<real64> pattern64(int channels, int height, int width, int seed)
     tensor<real64> value := tensor.zeros<real64>([nat(channels), nat(height), nat(width)])
-    for 0 <= int c < channels
-        for 0 <= int y < height
-            for 0 <= int x < width
+    for: 0 <= int c < channels
+        for: 0 <= int y < height
+            for: 0 <= int x < width
                 real64 sample := real64((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / 48.0 - 1.0
     return value
@@ -369,7 +369,7 @@ void sample32(string label, tensor<real32> value)
     for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
-    for 0 <= int index < count step 7
+    for: 0 <= int index < count step 7
         println("{label} {index} {flat[index].item()}")
 
 void sample64(string label, tensor<real64> value)
@@ -378,7 +378,7 @@ void sample64(string label, tensor<real64> value)
     for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
-    for 0 <= int index < count step 7
+    for: 0 <= int index < count step 7
         println("{label} {index} {flat[index].item()}")
 
 void sample8(string label, tensor<nat8> value)
@@ -387,7 +387,7 @@ void sample8(string label, tensor<nat8> value)
     for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
-    for 0 <= int index < count step 7
+    for: 0 <= int index < count step 7
         println("{label} {index} {flat[index].item()}")
 
 int | error run()
@@ -404,9 +404,9 @@ int | error run()
     sample32("second32", source.grad)
 
     tensor<nat8> bytes := tensor.zeros<nat8>([2, 64, 401])
-    for 0 <= nat c < 2
-        for 0 <= nat y < 64
-            for 0 <= nat x < 401
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 64
+            for: 0 <= nat x < 401
                 bytes[c, y, x] = nat8((c * 89 + y * 37 + x * 11) % 256)
     sample8("mean8", try vision.downsample_mean(bytes.gpu(0), 3))
     return 0

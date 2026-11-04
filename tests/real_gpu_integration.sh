@@ -149,9 +149,9 @@ int | error run()
     tensor<real32> cpu_blocks := tensor.zeros<real32>([2, 10, 14])
     tensor<nat8> cpu_block_bytes := tensor.zeros<nat8>([2, 10, 14])
     int block_index := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 10
-            for 0 <= nat x < 14
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 10
+            for: 0 <= nat x < 14
                 int float_value := (block_index * 31) % 17
                 real32 float_sample := real32(float_value)
                 cpu_blocks[c, y, x] = float_sample * real32(0.13) - real32(0.9)
@@ -166,9 +166,9 @@ int | error run()
     tensor<nat8> gpu_block_bytes_mean := (try vision.downsample_mean(cpu_block_bytes.gpu($GPU_INDEX), 3)).cpu()
     int block_differences := 0
     int byte_block_differences := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 3
-            for 0 <= nat x < 4
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 3
+            for: 0 <= nat x < 4
                 if cpu_block_mean[c, y, x].item() != gpu_block_mean[c, y, x].item()
                     block_differences += 1
                 if cpu_block_bytes_mean[c, y, x].item() != gpu_block_bytes_mean[c, y, x].item()
@@ -184,9 +184,9 @@ int | error run()
     math.mean(gpu_block_tracked).backward(&gpu_block_source)
     tensor<real32> gpu_block_grad := gpu_block_source.grad.cpu()
     int grad_differences := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 10
-            for 0 <= nat x < 14
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 10
+            for: 0 <= nat x < 14
                 if cpu_block_source.grad[c, y, x].item() != gpu_block_grad[c, y, x].item()
                     grad_differences += 1
     println(gpu_block_source.grad.device() == $GPU_INDEX and grad_differences == 0)
@@ -202,13 +202,13 @@ int | error run()
     tensor<real32> gpu_view_values := gpu_view_blocks.untrack().cpu()
     tensor<real32> gpu_view_grad := gpu_view_source.grad.cpu()
     int view_differences := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 4
-            for 0 <= nat x < 3
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 4
+            for: 0 <= nat x < 3
                 if cpu_view_blocks.untrack()[c, y, x].item() != gpu_view_values[c, y, x].item()
                     view_differences += 1
-        for 0 <= nat y < 14
-            for 0 <= nat x < 10
+        for: 0 <= nat y < 14
+            for: 0 <= nat x < 10
                 if cpu_view_source.grad[c, y, x].item() != gpu_view_grad[c, y, x].item()
                     view_differences += 1
     println(gpu_view_source.grad.device() == $GPU_INDEX and view_differences == 0)
@@ -220,13 +220,13 @@ int | error run()
     tensor<real32> portable_quarter_device := composition.block_mean<real32>(cpu_blocks.gpu($GPU_INDEX), 2)
     tensor<real32> portable_quarter := portable_quarter_device.cpu()
     int portable_differences := 0
-    for 0 <= nat c < 2
-        for 0 <= nat y < 3
-            for 0 <= nat x < 4
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 3
+            for: 0 <= nat x < 4
                 if portable_bytes[c, y, x].item() != cpu_block_bytes_mean[c, y, x].item()
                     portable_differences += 1
-        for 0 <= nat y < 5
-            for 0 <= nat x < 7
+        for: 0 <= nat y < 5
+            for: 0 <= nat x < 7
                 if portable_quarter[c, y, x].item() != native_quarter[c, y, x].item()
                     portable_differences += 1
     println(portable_quarter_device.device() == $GPU_INDEX and portable_differences == 0)
@@ -264,7 +264,7 @@ int | error run()
     tensor<real32> cpu_subnormal := try vision.downsample_mean(subnormal, 2)
     tensor<real32> gpu_subnormal := (try vision.downsample_mean(subnormal.gpu($GPU_INDEX), 2)).cpu()
     bool subnormal_ok := true
-    for 0 <= nat x < 2
+    for: 0 <= nat x < 2
         real32 gpu_value := gpu_subnormal[0, 0, x].item()
         if gpu_value != cpu_subnormal[0, 0, x].item() and gpu_value != real32(0.0)
             subnormal_ok = false
@@ -335,9 +335,9 @@ import vision
 int | error run()
     tensor<real32> pixels := tensor.zeros<real32>([2, 9, 12])
     tensor<nat8> bytes := tensor.zeros<nat8>([2, 9, 12])
-    for 0 <= nat c < 2
-        for 0 <= nat y < 9
-            for 0 <= nat x < 12
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 9
+            for: 0 <= nat x < 12
                 nat pixel_value := (c * 108 + y * 12 + x) % 23
                 real32 pixel_sample := real32(pixel_value)
                 pixels[c, y, x] = pixel_sample * real32(0.25)
@@ -345,7 +345,7 @@ int | error run()
                 bytes[c, y, x] = nat8(byte_value)
     tensor<real32> source := pixels.gpu($GPU_INDEX).track()
     tensor<nat8> device_bytes := bytes.gpu($GPU_INDEX)
-    for 0 <= nat step < 4
+    for: 0 <= nat step < 4
         tensor<real32> reduced := try vision.downsample_mean(source, 3)
         tensor<nat8> reduced_bytes := try vision.downsample_mean(device_bytes, 3)
         tensor<real32> picked := reduced.gather([5], [])

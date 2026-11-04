@@ -102,8 +102,8 @@ import vision
 int | error run()
     tensor<nat8> pixels := tensor.zeros<nat8>([1, 2, 3])
     int value := 1
-    for 0 <= nat y < 2
-        for 0 <= nat x < 3
+    for: 0 <= nat y < 2
+        for: 0 <= nat x < 3
             pixels[0, y, x] = nat8(value)
             value += 1
 
@@ -119,8 +119,8 @@ int | error run()
     tensor<nat8> full_crop := try vision.crop(pixels, top = 0, left = 0, height = 2, width = 3)
 
     int differences := 0
-    for 0 <= nat y < 2
-        for 0 <= nat x < 3
+    for: 0 <= nat y < 2
+        for: 0 <= nat x < 3
             nat8 expected := pixels[0, y, x].item()
             if flipped_twice[0, y, x].item() != expected
                 differences += 1

@@ -51,9 +51,9 @@ import vision
 int | error run()
     tensor<nat8> pixels := tensor.zeros<nat8>([3, 2, 3])
     int value := 0
-    for 0 <= nat channel < 3
-        for 0 <= nat y < 2
-            for 0 <= nat x < 3
+    for: 0 <= nat channel < 3
+        for: 0 <= nat y < 2
+            for: 0 <= nat x < 3
                 pixels[channel, y, x] = nat8(value)
                 value += 1
 
@@ -142,8 +142,8 @@ import vision
 int | error run()
     tensor<nat8> pixels := tensor.zeros<nat8>([1, 2, 3])
     int value := 1
-    for 0 <= nat y < 2
-        for 0 <= nat x < 3
+    for: 0 <= nat y < 2
+        for: 0 <= nat x < 3
             pixels[0, y, x] = nat8(value)
             value += 1
 
@@ -165,8 +165,8 @@ int | error run()
     tensor<nat8> first90 := try vision.rotate90(pixels)
     tensor<nat8> half_turn := try vision.rotate90(first90)
     int differences := 0
-    for 0 <= nat y < 2
-        for 0 <= nat x < 3
+    for: 0 <= nat y < 2
+        for: 0 <= nat x < 3
             if full_turn[0, y, x].item() != pixels[0, y, x].item()
                 differences += 1
             if half_turn[0, y, x].item() != turned180[0, y, x].item()
@@ -281,10 +281,10 @@ real32 reference_mean(tensor<real32> pixels, int plane, int oy, int ox, int fact
     int width := shape[int(len(shape)) - 1]
     tensor<real32> flat := pixels.reshape([nat(len_all(shape))])
     real32 total := 0.0
-    for 0 <= int dy < factor
+    for: 0 <= int dy < factor
         int base := (plane * height + oy * factor + dy) * width + ox * factor
         real32 row_sum := flat[base].item()
-        for 1 <= int dx < factor
+        for: 1 <= int dx < factor
             row_sum = row_sum + flat[base + dx].item()
         if dy == 0
             total = row_sum
@@ -300,7 +300,7 @@ int mismatches(tensor<real32> pixels, tensor<real32> reduced, int factor)
     int[] reduced_shape := int(reduced.shape())
     int rank := int(len(shape))
     int planes := 1
-    for 0 <= int axis < rank - 2
+    for: 0 <= int axis < rank - 2
         if reduced_shape[axis] != shape[axis]
             return -1
         planes = planes * shape[axis]
@@ -310,9 +310,9 @@ int mismatches(tensor<real32> pixels, tensor<real32> reduced, int factor)
         return -1
     tensor<real32> flat := reduced.reshape([nat(planes * output_height * output_width)])
     int count := 0
-    for 0 <= int plane < planes
-        for 0 <= int oy < output_height
-            for 0 <= int ox < output_width
+    for: 0 <= int plane < planes
+        for: 0 <= int oy < output_height
+            for: 0 <= int ox < output_width
                 real32 actual := flat[(plane * output_height + oy) * output_width + ox].item()
                 if actual != reference_mean(pixels, plane, oy, ox, factor)
                     count += 1
@@ -321,7 +321,7 @@ int mismatches(tensor<real32> pixels, tensor<real32> reduced, int factor)
 tensor<real32> pattern(int[] shape)
     int count := len_all(shape)
     tensor<real32> flat := tensor.zeros<real32>([nat(count)])
-    for 0 <= int index < count
+    for: 0 <= int index < count
         real32 sample := real32((index * 37 + index / 7) % 23)
         flat[index] = sample * real32(0.37) - real32(1.1)
     return flat.reshape(nat(shape))
@@ -344,10 +344,10 @@ int | error run()
 
     // Samples outside every complete block never contribute.
     tensor<real32> edited := image.reshape([3 * 11 * 14])
-    for 0 <= nat c < 3
-        for 0 <= nat y < 11
+    for: 0 <= nat c < 3
+        for: 0 <= nat y < 11
             edited[(c * 11 + y) * 14 + 13] = real32(1000)
-        for 0 <= nat x < 14
+        for: 0 <= nat x < 14
             edited[(c * 11 + 10) * 14 + x] = real32(-1000)
     tensor<real32> edited_reduced := try vision.downsample_mean(edited.reshape([3, 11, 14]), 3)
     println(mismatches(image, edited_reduced, 3))
@@ -373,15 +373,15 @@ int | error run()
     int height := 8
     int width := 12
     tensor<real32> sem := tensor.zeros<real32>([1, 35, 50])
-    for 0 <= nat y < 35
-        for 0 <= nat x < 50
+    for: 0 <= nat y < 35
+        for: 0 <= nat x < 50
             real32 sample := real32((y * 50 + x) * 97 % 256)
             sem[0, y, x] = sample
     tensor<real32> gathered := tensor.zeros([1, nat(height), nat(width)])
     int[] indices := array(nat(height * width), fill = 0)
-    for 0 <= int dy < factor
-        for 0 <= int dx < factor
-            for 0 <= int index < height * width
+    for: 0 <= int dy < factor
+        for: 0 <= int dx < factor
+            for: 0 <= int index < height * width
                 indices[index] = ((index / width) * factor + dy) * 50 + (index % width) * factor + dx
             gathered = gathered + sem.gather(indices, [1, height, width])
     real32 divisor := real32(factor * factor)
@@ -389,8 +389,8 @@ int | error run()
     tensor<real32> blocks := try vision.downsample_mean(sem, factor)
     tensor<real32> shrunk := try vision.crop(blocks, 0, 0, height, width)
     int shrink_differences := 0
-    for 0 <= int y < height
-        for 0 <= int x < width
+    for: 0 <= int y < height
+        for: 0 <= int x < width
             if shrunk[0, y, x].item() != gathered[0, y, x].item()
                 shrink_differences += 1
     println(shrink_differences)
@@ -441,18 +441,18 @@ import math
 
 tensor<real32> pattern32(int channels, int height, int width, int seed)
     tensor<real32> value := tensor.zeros<real32>([nat(channels), nat(height), nat(width)])
-    for 0 <= int c < channels
-        for 0 <= int y < height
-            for 0 <= int x < width
+    for: 0 <= int c < channels
+        for: 0 <= int y < height
+            for: 0 <= int x < width
                 real32 sample := real32((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / real32(48) - real32(1)
     return value
 
 tensor<real64> pattern64(int channels, int height, int width, int seed)
     tensor<real64> value := tensor.zeros<real64>([nat(channels), nat(height), nat(width)])
-    for 0 <= int c < channels
-        for 0 <= int y < height
-            for 0 <= int x < width
+    for: 0 <= int c < channels
+        for: 0 <= int y < height
+            for: 0 <= int x < width
                 real64 sample := real64((c * 53 + y * 131 + x * 71 + seed * 17) % 97)
                 value[c, y, x] = sample / 48.0 - 1.0
     return value
@@ -463,7 +463,7 @@ void sample32(string label, tensor<real32> value)
     for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
-    for 0 <= int index < count step 7
+    for: 0 <= int index < count step 7
         println("{label} {index} {flat[index].item()}")
 
 void sample64(string label, tensor<real64> value)
@@ -472,7 +472,7 @@ void sample64(string label, tensor<real64> value)
     for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
-    for 0 <= int index < count step 7
+    for: 0 <= int index < count step 7
         println("{label} {index} {flat[index].item()}")
 
 void sample8(string label, tensor<nat8> value)
@@ -481,7 +481,7 @@ void sample8(string label, tensor<nat8> value)
     for extent := flat.shape()[]
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
-    for 0 <= int index < count step 7
+    for: 0 <= int index < count step 7
         println("{label} {index} {flat[index].item()}")
 
 int | error run()
@@ -498,16 +498,16 @@ int | error run()
     sample32("second32", source.grad)
 
     tensor<nat8> bytes := tensor.zeros<nat8>([2, 64, 401])
-    for 0 <= nat c < 2
-        for 0 <= nat y < 64
-            for 0 <= nat x < 401
+    for: 0 <= nat c < 2
+        for: 0 <= nat y < 64
+            for: 0 <= nat x < 401
                 bytes[c, y, x] = nat8((c * 89 + y * 37 + x * 11) % 256)
     sample8("mean8", try vision.downsample_mean(bytes, 3))
 
     // The uint8 filter kernel (CPU only) over rows of several chunks.
     tensor<int64> taps := tensor.zeros<int64>([3, 3])
-    for 0 <= nat ky < 3
-        for 0 <= nat kx < 3
+    for: 0 <= nat ky < 3
+        for: 0 <= nat kx < 3
             taps[ky, kx] = int64((int(ky) * 3 + int(kx)) % 4 + 1)
     tensor<nat8> filtered := try vision.filter(bytes, taps, divisor = 9, offset = 3)
     sample8("filter", filtered)

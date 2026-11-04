@@ -13,7 +13,7 @@ tensor<T> convolve2d<T: numeric>(
     kernel_width := kernel_shape[1]
 
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
 
     padded_height := height + padding * 2
@@ -24,7 +24,7 @@ tensor<T> convolve2d<T: numeric>(
 
     input_count := planes * height * width
     padded_indices := array(nat(input_count), fill = 0)
-    for 0 <= int flat_index < input_count
+    for: 0 <= int flat_index < input_count
         x := flat_index % width
         remaining := flat_index / width
         y := remaining % height
@@ -45,7 +45,7 @@ tensor<T> convolve2d<T: numeric>(
     patch_count := patch_rows * kernel_count
     patch_indices := array(nat(patch_count), fill = 0)
 
-    for 0 <= int flat_index < patch_count
+    for: 0 <= int flat_index < patch_count
         patch_column := flat_index % kernel_count
         patch_row := flat_index / kernel_count
 
@@ -75,18 +75,18 @@ tensor<T> convolve2d<T: numeric>(
     // preserving the differentiable graph for floating-point tensors.
     first_patch_indices := array(nat(patch_rows), fill = 0)
     first_kernel_indices := array(nat(patch_rows), fill = 0)
-    for 0 <= int patch_row < patch_rows
+    for: 0 <= int patch_row < patch_rows
         first_patch_indices[patch_row] = patch_row * kernel_count
     result := (
         patches.gather(first_patch_indices, [patch_rows])
         * flat_kernel.gather(first_kernel_indices, [patch_rows])
     )
 
-    for 0 <= int remaining_column < kernel_count - 1
+    for: 0 <= int remaining_column < kernel_count - 1
         patch_column := remaining_column + 1
         column_patch_indices := array(nat(patch_rows), fill = 0)
         column_kernel_indices := array(nat(patch_rows), fill = patch_column)
-        for 0 <= int patch_row < patch_rows
+        for: 0 <= int patch_row < patch_rows
             column_patch_indices[patch_row] = (
                 patch_row * kernel_count + patch_column
             )
@@ -125,13 +125,13 @@ tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
     output_width := width / factor
     covered_height := output_height * factor
     planes := 1
-    for 0 <= int axis < height_axis
+    for: 0 <= int axis < height_axis
         planes = planes * shape[axis]
 
     // Horizontal pass: [planes, covered_height, output_width] run sums.
     run_count := planes * covered_height * output_width
     run_starts := array(nat(run_count), fill = 0)
-    for 0 <= int flat_index < run_count
+    for: 0 <= int flat_index < run_count
         ox := flat_index % output_width
         remaining := flat_index / output_width
         y := remaining % covered_height
@@ -139,8 +139,8 @@ tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
         run_starts[flat_index] = (plane * height + y) * width + ox * factor
     runs := pixels.gather(run_starts, [run_count])
     run_indices := array(nat(run_count), fill = 0)
-    for 1 <= int dx < factor
-        for 0 <= int flat_index < run_count
+    for: 1 <= int dx < factor
+        for: 0 <= int flat_index < run_count
             run_indices[flat_index] = run_starts[flat_index] + dx
         runs = runs + pixels.gather(run_indices, [run_count])
 
@@ -150,7 +150,7 @@ tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
     output_shape[width_axis] = output_width
     output_count := planes * output_height * output_width
     block_tops := array(nat(output_count), fill = 0)
-    for 0 <= int flat_index < output_count
+    for: 0 <= int flat_index < output_count
         ox := flat_index % output_width
         remaining := flat_index / output_width
         oy := remaining % output_height
@@ -160,8 +160,8 @@ tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
         )
     total := runs.gather(block_tops, output_shape)
     block_rows := array(nat(output_count), fill = 0)
-    for 1 <= int dy < factor
-        for 0 <= int flat_index < output_count
+    for: 1 <= int dy < factor
+        for: 0 <= int flat_index < output_count
             block_rows[flat_index] = block_tops[flat_index] + dy * output_width
         total = total + runs.gather(block_rows, output_shape)
     return total
@@ -221,6 +221,6 @@ tensor<T> dense_copy<T: numeric>(tensor<T> pixels)
     for axis_extent := copy_shape[]
         element_count = element_count * axis_extent
     logical_order := array(nat(element_count), fill = 0)
-    for 0 <= int logical_position < element_count
+    for: 0 <= int logical_position < element_count
         logical_order[logical_position] = logical_position
     return pixels.gather(logical_order, copy_shape)
