@@ -12,7 +12,7 @@ tensor<T> convolve2d<T: numeric>(
     kernel_height := kernel_shape[0]
     kernel_width := kernel_shape[1]
 
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
 
@@ -124,7 +124,7 @@ tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
     output_height := height / factor
     output_width := width / factor
     covered_height := output_height * factor
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
 
@@ -217,7 +217,7 @@ tensor<nat8> | error block_mean_u8(tensor<nat8> pixels, int factor)
 // which keeps the autograd graph and stays on the input device.
 tensor<T> dense_copy<T: numeric>(tensor<T> pixels)
     copy_shape := int(pixels.shape())
-    int element_count := 1
+    element_count := 1
     for axis_extent := copy_shape[]
         element_count = element_count * axis_extent
     int[] logical_order := array(nat(element_count), fill = 0)

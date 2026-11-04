@@ -4,7 +4,7 @@ import internal = "./internal.qui"
 
 tensor<T> | error read<T: numeric>(
     string path,
-    int channels := 0
+    channels := 0
 )
     if channels != 0 and channels != 1 and channels != 3 and channels != 4
         return error("vision.read channels must be 0, 1, 3, or 4", code = "VISION_ARGUMENT")
@@ -27,7 +27,7 @@ tensor<T> | error read<T: numeric>(
 void | error write<T: numeric>(
     string path,
     tensor<T> pixels,
-    int quality := 90
+    quality := 90
 )
     if quality < 1 or quality > 100
         return error("vision.write quality must be between 1 and 100", code = "VISION_ARGUMENT")
@@ -66,7 +66,7 @@ tensor<T> | error crop<T>(
         return error("vision.crop origin is outside the image", code = "VISION_SHAPE")
     if height > input_height - top or width > input_width - left
         return error("vision.crop rectangle exceeds the image", code = "VISION_SHAPE")
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
@@ -94,7 +94,7 @@ tensor<T> | error resize<T>(tensor<T> pixels, int height, int width)
     width_axis := int(len(shape)) - 1
     input_height := shape[height_axis]
     input_width := shape[width_axis]
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
@@ -204,7 +204,7 @@ tensor<T> | error flip_horizontal<T>(tensor<T> pixels)
     width_axis := int(len(shape)) - 1
     height := shape[height_axis]
     width := shape[width_axis]
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     count := planes * height * width
@@ -227,7 +227,7 @@ tensor<T> | error flip_vertical<T>(tensor<T> pixels)
     width_axis := int(len(shape)) - 1
     height := shape[height_axis]
     width := shape[width_axis]
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     count := planes * height * width
@@ -252,7 +252,7 @@ tensor<T> | error rotate90<T>(tensor<T> pixels)
     input_width := shape[width_axis]
     output_height := input_width
     output_width := input_height
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
@@ -280,7 +280,7 @@ tensor<T> | error rotate180<T>(tensor<T> pixels)
     width_axis := int(len(shape)) - 1
     height := shape[height_axis]
     width := shape[width_axis]
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     count := planes * height * width
@@ -305,7 +305,7 @@ tensor<T> | error rotate270<T>(tensor<T> pixels)
     input_width := shape[width_axis]
     output_height := input_width
     output_width := input_height
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     output_shape := shape
@@ -338,7 +338,7 @@ tensor<nat8> | error grayscale(tensor<nat8> pixels)
 
     height := shape[int(len(shape)) - 2]
     width := shape[int(len(shape)) - 1]
-    int images := 1
+    images := 1
     for 0 <= int axis < channel_axis
         images = images * shape[axis]
     output_count := images * height * width
@@ -384,7 +384,7 @@ tensor<T> | error grayscale<T: floating>(tensor<T> pixels)
 
     height := shape[int(len(shape)) - 2]
     width := shape[int(len(shape)) - 1]
-    int images := 1
+    images := 1
     for 0 <= int axis < channel_axis
         images = images * shape[axis]
     output_count := images * height * width
@@ -426,7 +426,7 @@ tensor<T> | error threshold<T: floating>(
         if dimension <= 0
             return error("vision.threshold requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
 
-    int count := 1
+    count := 1
     for dimension := shape[]
         count = count * dimension
     flat := pixels.reshape([nat(count)])
@@ -510,7 +510,7 @@ tensor<nat8> | error blur(tensor<nat8> pixels, int radius := 1)
     width_axis := int(len(shape)) - 1
     height := shape[height_axis]
     width := shape[width_axis]
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     max_radius := height - 1
@@ -568,7 +568,7 @@ tensor<T> | error filter<T: floating, K: floating>(
     width_axis := int(len(shape)) - 1
     height := shape[height_axis]
     width := shape[width_axis]
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     kernel_height := kernel_shape[0]
@@ -649,7 +649,7 @@ tensor<nat8> | error filter(
     width_axis := int(len(shape)) - 1
     height := shape[height_axis]
     width := shape[width_axis]
-    int planes := 1
+    planes := 1
     for 0 <= int axis < height_axis
         planes = planes * shape[axis]
     kernel_height := kernel_shape[0]
@@ -707,7 +707,7 @@ tensor<nat8> | error filter(
     converted := try nat8(flat)
     return converted.reshape(nat(result_shape))
 
-tensor<T> | error dilate<T>(tensor<T> pixels, int radius := 1)
+tensor<T> | error dilate<T>(tensor<T> pixels, radius := 1)
     shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.dilate requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
@@ -719,7 +719,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius := 1)
 
     height := shape[int(len(shape)) - 2]
     width := shape[int(len(shape)) - 1]
-    int count := 1
+    count := 1
     for dimension := shape[]
         if count > 9223372036854775807 / dimension
             return error("vision.dilate tensor shape is too large", code = "VISION_SIZE")
@@ -787,7 +787,7 @@ tensor<T> | error dilate<T>(tensor<T> pixels, int radius := 1)
     vertical_extrema := math.max_last<T>(vertical_windows)
     return vertical_extrema.gather(selected, [count]).reshape(nat(shape))
 
-tensor<T> | error erode<T>(tensor<T> pixels, int radius := 1)
+tensor<T> | error erode<T>(tensor<T> pixels, radius := 1)
     shape := int(pixels.shape())
     if len(shape) < 3
         return error("vision.erode requires rank >= 3 with trailing C, H, W dimensions", code = "VISION_SHAPE")
@@ -799,7 +799,7 @@ tensor<T> | error erode<T>(tensor<T> pixels, int radius := 1)
 
     height := shape[int(len(shape)) - 2]
     width := shape[int(len(shape)) - 1]
-    int count := 1
+    count := 1
     for dimension := shape[]
         if count > 9223372036854775807 / dimension
             return error("vision.erode tensor shape is too large", code = "VISION_SIZE")
