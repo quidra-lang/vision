@@ -76,8 +76,10 @@ their own element type in one fixed order - every row of the block left to
 right, then the row sums top to bottom - and divide once by `factor * factor`;
 the native CPU and Metal kernels and the portable composition all use that
 order. The CPU and Metal kernels give bit-identical results for normal-range
-`real32` values, infinities and NaN, including for views and gradients; Metal
-flushes subnormal `real32` inputs and results to zero, where the CPU kernel
+`real32` values and valid signed infinities, including for views and gradients;
+NaN-producing block means report an error immediately on CPU and at the next
+synchronization on Metal. Metal flushes subnormal `real32` inputs and results
+to zero, where the CPU kernel
 keeps them. `tensor<nat8>` blocks are summed exactly and the quotient is truncated,
 as in the `nat8` `blur`. The block mean is linear, so tracked floating input
 stays tracked: backward spreads each output gradient evenly over its block
@@ -182,7 +184,7 @@ Core numeric conversions propagate with their original Core code.
 | `VISION_ARGUMENT` | Invalid operation argument | Bad radius, quality, factor or divisor |
 | `VISION_SHAPE` | Incompatible tensor geometry or storage | Rank, dimensions, crop bounds or channels |
 | `VISION_SIZE` | Tensor/workspace exceeds supported size | Large morphology working set |
-| `VISION_TRACKED` | Operation disallows tracked tensors | Grayscale or threshold on a tracked input |
+| `VISION_TRACKED` | Operation disallows tracked tensors | Threshold on a tracked floating input |
 | `VISION_DECODE` | Image decode failure | Unreadable image data or metadata |
 | `VISION_ENCODE` | Image write failure | Unsupported output encoding |
 | `VISION_NATIVE` | Package native-kernel failure | Block-mean execution error |
