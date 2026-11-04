@@ -187,14 +187,14 @@ T block_size<T: floating>(int count)
 // or no kernel for the backend or tensor size (6). Every other status is
 // returned as an error from block_native_problem.
 bool block_native_unavailable(int32 status)
-    return status == int32(2) or status == int32(5) or status == int32(6)
+    return status == 2 or status == 5 or status == 6
 
 string block_native_problem(int32 status)
-    if status == int32(9)
+    if status == 9
         return "vision.downsample_mean does not support real64 tensors on Metal, which has no real64 arithmetic; convert to real32 or move the tensor to the CPU explicitly"
-    if status == int32(7)
+    if status == 7
         return "vision.downsample_mean device kernel failed"
-    if status == int32(8)
+    if status == 8
         return "vision.downsample_mean could not attach its autograd node"
     return "vision.downsample_mean native kernel rejected its arguments (status {status})"
 

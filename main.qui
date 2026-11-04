@@ -20,7 +20,7 @@ tensor<T> | error read<T: numeric>(
     output := tensor.zeros<T>([nat(channel_count), nat(height), nat(width)])
     status := native.image_fill<T>(handle, &output)
     native.image_close(handle)
-    if status != int32(0)
+    if status != 0
         return error("vision.read failed to materialize the decoded image", code = "VISION_DECODE")
     return output
 
@@ -39,7 +39,7 @@ void | error write<T: numeric>(
     if not pixels.is_contiguous()
         return error("vision.write requires a contiguous tensor", code = "VISION_SHAPE")
     status := native.image_write<T>(path, pixels, int64(quality))
-    if status != int32(0)
+    if status != 0
         return error("vision.write failed; image codecs require a CPU tensor and a supported file extension", code = "VISION_ENCODE")
     return
 
@@ -143,7 +143,7 @@ tensor<nat8> | error downsample_mean(tensor<nat8> pixels, int factor)
     native_status := native.downsample_mean<nat8>(
         source, &native_output, int64(factor)
     )
-    if native_status == int32(0)
+    if native_status == 0
         return native_output
     if not internal.block_native_unavailable(native_status)
         return error(internal.block_native_problem(native_status), code = "VISION_NATIVE")
@@ -187,7 +187,7 @@ tensor<T> | error downsample_mean<T: floating>(tensor<T> pixels, int factor)
     native_status := native.downsample_mean<T>(
         source, &native_output, int64(factor)
     )
-    if native_status == int32(0)
+    if native_status == 0
         return native_output
     if not internal.block_native_unavailable(native_status)
         return error(internal.block_native_problem(native_status), code = "VISION_NATIVE")
@@ -366,8 +366,8 @@ tensor<nat8> | error grayscale(tensor<nat8> pixels)
     green := values.gather(green_indices, output_shape)
     blue := values.gather(blue_indices, output_shape)
     gray := (
-        red * int64(299) + green * int64(587) + blue * int64(114) + int64(500)
-    ) / int64(1000)
+        red * 299 + green * 587 + blue * 114 + 500
+    ) / 1000
     return nat8(gray)
 
 tensor<T> | error grayscale<T: floating>(tensor<T> pixels)
@@ -456,7 +456,7 @@ tensor<nat8> | error threshold(
     high_value := int(high)
     values := int64(pixels)
     mask_offset := int64(256 - cutoff_value)
-    mask := (values + mask_offset) / int64(256)
+    mask := (values + mask_offset) / 256
     low_scalar := int64(low_value)
     range_scalar := int64(high_value - low_value)
     result := low_scalar + mask * range_scalar
@@ -642,7 +642,7 @@ tensor<nat8> | error filter(
     native_status := native.filter_u8(
         pixels, kernel, &native_output, int64(divisor), int64(offset)
     )
-    if native_status == int32(0)
+    if native_status == 0
         return native_output
 
     height_axis := int(len(shape)) - 2
@@ -697,7 +697,7 @@ tensor<nat8> | error filter(
 
     flat := filtered.reshape([nat(input_count)])
     for 0 <= int index < input_count
-        adjusted := int(flat[index].item()) / divisor + offset
+        adjusted := flat[index].item() / divisor + offset
         if adjusted < 0
             adjusted = 0
         if adjusted > 255
