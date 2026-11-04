@@ -19,8 +19,8 @@ int | error compile_device_surface()
     tensor<nat8> transferred := tensor.ones<nat8>([3, 2, 2]).gpu(0)
     tensor<nat8> roundtrip := transferred.cpu()
     tensor<nat8> transformed := try vision.flip_horizontal(direct)
-    print.line(roundtrip.shape()[0])
-    print.line(transformed.shape()[0])
+    println(roundtrip.shape()[0])
+    println(transformed.shape()[0])
     return 0
 QUI
 
@@ -28,7 +28,7 @@ QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" check "$TMP/device-check.qui" >/de
 
 cat > "$TMP/no-fallback-create.qui" <<'QUI'
 tensor<nat8> value := tensor.zeros<nat8>([1, 1, 1], gpu = 2147483647)
-print.line(value.shape()[0])
+println(value.shape()[0])
 QUI
 
 set +e
@@ -48,7 +48,7 @@ fi
 cat > "$TMP/no-fallback-transfer.qui" <<'QUI'
 tensor<nat8> cpu := tensor.ones<nat8>([1, 1, 1])
 tensor<nat8> value := cpu.gpu(2147483647)
-print.line(value.shape()[0])
+println(value.shape()[0])
 QUI
 
 set +e
@@ -113,22 +113,22 @@ int | error run()
     tensor<nat8> turned180 := try vision.rotate180(pixels)
     tensor<nat8> turned270 := try vision.rotate270(pixels)
 
-    print.line(cropped[0, 0, 0].item())
-    print.line(resized.shape()[1])
-    print.line(resized.shape()[2])
-    print.line(horizontal[0, 0, 0].item())
-    print.line(vertical[0, 0, 0].item())
-    print.line(turned90[0, 0, 0].item())
-    print.line(turned90[0, 2, 1].item())
-    print.line(turned180[0, 0, 0].item())
-    print.line(turned270[0, 0, 0].item())
+    println(cropped[0, 0, 0].item())
+    println(resized.shape()[1])
+    println(resized.shape()[2])
+    println(horizontal[0, 0, 0].item())
+    println(vertical[0, 0, 0].item())
+    println(turned90[0, 0, 0].item())
+    println(turned90[0, 2, 1].item())
+    println(turned180[0, 0, 0].item())
+    println(turned270[0, 0, 0].item())
 
     tensor<nat8> rgb := tensor.ones<nat8>([3, 2, 2], gpu = 0)
     tensor<nat8> gray := try vision.grayscale(rgb)
     tensor<nat8> binary := try vision.threshold(pixels, cutoff = nat8(4))
-    print.line(gray[0, 0, 0].item())
-    print.line(binary[0, 0, 0].item())
-    print.line(binary[0, 1, 2].item())
+    println(gray[0, 0, 0].item())
+    println(binary[0, 0, 0].item())
+    println(binary[0, 1, 2].item())
 
     tensor<nat8> impulse := tensor.zeros<nat8>([1, 3, 3], gpu = 0)
     impulse[0, 1, 1] = nat8(255)
@@ -141,13 +141,13 @@ int | error run()
     tensor<int64> kernel := tensor.zeros<int64>([3, 3], gpu = 0)
     kernel[1, 1] = 1
     tensor<nat8> filtered := try vision.filter(impulse, kernel)
-    print.line(blurred[0, 1, 1].item())
-    print.line(expanded[0, 0, 0].item())
-    print.line(contracted[0, 1, 1].item())
-    print.line(huge_blurred[0, 1, 1].item())
-    print.line(huge_expanded[0, 0, 0].item())
-    print.line(huge_contracted[0, 1, 1].item())
-    print.line(filtered[0, 1, 1].item())
+    println(blurred[0, 1, 1].item())
+    println(expanded[0, 0, 0].item())
+    println(contracted[0, 1, 1].item())
+    println(huge_blurred[0, 1, 1].item())
+    println(huge_expanded[0, 0, 0].item())
+    println(huge_contracted[0, 1, 1].item())
+    println(filtered[0, 1, 1].item())
     return 0
 
 int | error result := run()
@@ -155,7 +155,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 vision_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-gpu-compute.qui")"
@@ -174,9 +174,9 @@ tensor<int64> kernel := tensor.ones<int64>([1, 1])
 tensor<nat8> | error output := vision.filter(pixels, kernel)
 match output
     tensor<nat8> value
-        print.line(value.shape()[0])
+        println(value.shape()[0])
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 expect_device_failure "$TMP/filter-device-mismatch.qui" "tensor operands are on different devices"
 
@@ -187,9 +187,9 @@ tensor<nat8> image_gpu := tensor.ones<nat8>([1, 1, 1], gpu = 0)
 void | error written := vision.write("should-not-exist.png", image_gpu)
 match written
     void
-        print.line("unexpected success")
+        println("unexpected success")
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 write_output="$(cd "$TMP" && QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" run "$TMP/image-write-gpu.qui")"
@@ -237,12 +237,12 @@ int | error run()
     // Results stay on the input's device and match the CPU result.
     tensor<real32> on_device := try vision.downsample_mean(host.gpu(1), 3)
     tensor<real32> on_host := try vision.downsample_mean(host, 3)
-    print.line(on_device.device())
-    print.line(differences(on_device.cpu(), on_host))
+    println(on_device.device())
+    println(differences(on_device.cpu(), on_host))
 
     tensor<nat8> bytes_on_device := try vision.downsample_mean(host_bytes.gpu(0), 2)
     tensor<nat8> bytes_on_host := try vision.downsample_mean(host_bytes, 2)
-    print.line(bytes_on_device.device())
+    println(bytes_on_device.device())
     tensor<nat8> bytes_back := bytes_on_device.cpu()
     int byte_differences := 0
     for 0 <= nat c < 2
@@ -250,30 +250,30 @@ int | error run()
             for 0 <= nat x < 4
                 if bytes_back[c, y, x].item() != bytes_on_host[c, y, x].item()
                     byte_differences += 1
-    print.line(byte_differences)
+    println(byte_differences)
 
     // Tracked device input keeps its graph and gradients on that device.
     tensor<real32> source := host.gpu(0).track()
     tensor<real32> reduced := try vision.downsample_mean(source, 3)
-    print.line(reduced.is_tracked())
+    println(reduced.is_tracked())
     math.mean(reduced).backward(&source)
-    print.line(source.grad.device())
+    println(source.grad.device())
     tensor<real32> host_source := host.track()
     tensor<real32> host_reduced := try vision.downsample_mean(host_source, 3)
     math.mean(host_reduced).backward(&host_source)
-    print.line(differences(source.grad.cpu(), host_source.grad))
+    println(differences(source.grad.cpu(), host_source.grad))
 
     // A tracked non-contiguous view stays on the device, and its values and
     // gradients match the CPU.
     tensor<real32> view := host.gpu(0).transpose(1, 2).track()
     tensor<real32> view_reduced := try vision.downsample_mean(view, 2)
-    print.line(view_reduced.device())
+    println(view_reduced.device())
     tensor<real32> host_view := host.transpose(1, 2).track()
     tensor<real32> host_view_reduced := try vision.downsample_mean(host_view, 2)
     math.mean(view_reduced * view_reduced).backward(&view)
     math.mean(host_view_reduced * host_view_reduced).backward(&host_view)
-    print.line(view.grad.device())
-    print.line(differences(view.grad.cpu(), host_view.grad) + differences(view_reduced.untrack().cpu(), host_view_reduced.untrack()))
+    println(view.grad.device())
+    println(differences(view.grad.cpu(), host_view.grad) + differences(view_reduced.untrack().cpu(), host_view_reduced.untrack()))
 
     // A strided upstream gradient (transpose after the block mean) reaches
     // the device gradient kernel densely and matches the CPU.
@@ -290,18 +290,18 @@ int | error run()
     tensor<real32> host_strided_source := host.track()
     tensor<real32> host_strided_reduced := try vision.downsample_mean(host_strided_source, 3)
     math.mean(host_strided_reduced.transpose(1, 2) * weights).backward(&host_strided_source)
-    print.line(strided_source.grad.device())
-    print.line(differences(strided_source.grad.cpu(), host_strided_source.grad))
+    println(strided_source.grad.device())
+    println(differences(strided_source.grad.cpu(), host_strided_source.grad))
 
     // The portable composition gives the native results on CPU and on the
     // device, for floating and nat8 input.
     tensor<real32> portable_host := composition.block_mean<real32>(host, 3)
     tensor<real32> portable_device := composition.block_mean<real32>(host.gpu(0), 3)
-    print.line(portable_device.device())
-    print.line(differences(portable_host, on_host) + differences(portable_device.cpu(), on_host))
+    println(portable_device.device())
+    println(differences(portable_host, on_host) + differences(portable_device.cpu(), on_host))
     tensor<nat8> portable_bytes_host := try composition.block_mean_u8(host_bytes, 2)
     tensor<nat8> portable_bytes_device := try composition.block_mean_u8(host_bytes.gpu(1), 2)
-    print.line(portable_bytes_device.device())
+    println(portable_bytes_device.device())
     tensor<nat8> portable_bytes_back := portable_bytes_device.cpu()
     int portable_byte_differences := 0
     for 0 <= nat c < 2
@@ -311,11 +311,11 @@ int | error run()
                     portable_byte_differences += 1
                 if portable_bytes_back[c, y, x].item() != bytes_on_host[c, y, x].item()
                     portable_byte_differences += 1
-    print.line(portable_byte_differences)
+    println(portable_byte_differences)
     tensor<real32> portable_source := host.gpu(0).track()
     tensor<real32> portable_reduced := composition.block_mean<real32>(portable_source, 3)
     math.mean(portable_reduced).backward(&portable_source)
-    print.line(differences(portable_source.grad.cpu(), host_source.grad))
+    println(differences(portable_source.grad.cpu(), host_source.grad))
     return 0
 
 int | error result := run()
@@ -323,7 +323,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-device.qui")"
@@ -370,7 +370,7 @@ void sample32(string label, tensor<real32> value)
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
-        print.line("{label} {index} {flat[index].item()}")
+        println("{label} {index} {flat[index].item()}")
 
 void sample64(string label, tensor<real64> value)
     tensor<real64> flat := value.untrack().cpu().contiguous()
@@ -379,7 +379,7 @@ void sample64(string label, tensor<real64> value)
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
-        print.line("{label} {index} {flat[index].item()}")
+        println("{label} {index} {flat[index].item()}")
 
 void sample8(string label, tensor<nat8> value)
     tensor<nat8> flat := value.cpu().contiguous()
@@ -388,7 +388,7 @@ void sample8(string label, tensor<nat8> value)
         count = count * int(extent)
     flat = flat.reshape([nat(count)])
     for 0 <= int index < count step 7
-        print.line("{label} {index} {flat[index].item()}")
+        println("{label} {index} {flat[index].item()}")
 
 int | error run()
     // Factor 3 leaves a row and two columns outside every block, which the
@@ -424,13 +424,13 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 int | error result64 := run64()
 match result64
     int
         int ignored := result64
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 thread_outputs=()
 for threads in 1 3 ""; do
@@ -462,7 +462,7 @@ int | error run()
     tensor<$element> pixels := tensor<$element>([1, 4, 4], gpu = 0)
     pixels[0, 0, 0] = $element(1)
     tensor<$element> reduced := try vision.downsample_mean(pixels, 2)
-    print.line(reduced.cpu()[0, 0, 0].item())
+    println(reduced.cpu()[0, 0, 0].item())
     return 0
 
 int | error result := run()
@@ -470,7 +470,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
     expect_device_failure "$TMP/uninitialized-$element.qui" "UNINITIALIZED"
 done

@@ -18,7 +18,7 @@ match reduced
         print(value[0, 0, 0].item() == real32(1.0))
     error
         print(false)
-print.line()
+println()
 QUI
 finite="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/finite.qui")"
 if [[ "$finite" != "true" ]]; then
@@ -39,7 +39,7 @@ match reduced
         print(value[0, 0, 0].item() == $element(inf))
     error
         print(false)
-print.line()
+println()
 QUI
     result="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/overflow.qui")"
     if [[ "$result" != true ]]; then
@@ -53,9 +53,9 @@ $element infinity := $element(1) / $element(0)
 tensor<$element> pixels := tensor.ones<$element>([1, 2, 2])
 pixels[0, 0, 0] = infinity
 pixels[0, 0, 1] = -infinity
-print.line("before")
+println("before")
 tensor<$element> | error reduced := vision.downsample_mean(pixels, 2)
-print.line("after")
+println("after")
 QUI
     set +e
     QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/opposed.qui" \
@@ -104,7 +104,7 @@ match result
         print(data[0, 0, 0].item() == $element(inf) and data[0, 0, 1].item() == $element(-inf))
     error
         print(false)
-print.line()
+println()
 QUI
     got="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/read-infinity.qui")"
     if [[ "$got" != true ]]; then
@@ -114,9 +114,9 @@ QUI
 
     cat > "$TMP/read-nan.qui" <<QUI
 import vision
-print.line("before")
+println("before")
 tensor<$element> | error result := vision.read<$element>("$TMP/$element-nan.tiff")
-print.line("after")
+println("after")
 QUI
     set +e
     QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/read-nan.qui" \

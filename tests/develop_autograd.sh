@@ -18,112 +18,112 @@ int | error run()
         crop_source, top = 0, left = 1, height = 2, width = 2
     )
     math.mean(cropped).backward(&crop_source)
-    print.line(cropped.shape()[0] == 2)
-    print.line(cropped.shape()[1] == 1)
-    print.line(cropped.shape()[2] == 2)
-    print.line(cropped.shape()[3] == 2)
-    print.line(crop_source.grad.shape()[0] == 2)
-    print.line(crop_source.grad[0, 0, 0, 0].item() == real32(0))
+    println(cropped.shape()[0] == 2)
+    println(cropped.shape()[1] == 1)
+    println(cropped.shape()[2] == 2)
+    println(cropped.shape()[3] == 2)
+    println(crop_source.grad.shape()[0] == 2)
+    println(crop_source.grad[0, 0, 0, 0].item() == real32(0))
     real32 crop_grad := crop_source.grad[0, 0, 0, 1].item()
-    print.line(crop_grad > real32(0.1249) and crop_grad < real32(0.1251))
+    println(crop_grad > real32(0.1249) and crop_grad < real32(0.1251))
 
     tensor<real32> resize_source := tensor.ones<real32>([1, 1, 2, 2]).track()
     tensor<real32> resized := try vision.resize(resize_source, height = 4, width = 4)
     math.mean(resized).backward(&resize_source)
-    print.line(resized.shape()[2] == 4 and resized.shape()[3] == 4)
+    println(resized.shape()[2] == 4 and resized.shape()[3] == 4)
     real32 resize_grad := resize_source.grad[0, 0, 0, 0].item()
-    print.line(resize_grad > real32(0.2499) and resize_grad < real32(0.2501))
+    println(resize_grad > real32(0.2499) and resize_grad < real32(0.2501))
 
     tensor<real32> horizontal_source := tensor.ones<real32>([1, 1, 2, 3]).track()
     tensor<real32> horizontal := try vision.flip_horizontal(horizontal_source)
     math.mean(horizontal).backward(&horizontal_source)
-    print.line(horizontal_source.grad[0, 0, 0, 0].item() > real32(0))
+    println(horizontal_source.grad[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> vertical_source := tensor.ones<real32>([1, 1, 2, 3]).track()
     tensor<real32> vertical := try vision.flip_vertical(vertical_source)
     math.mean(vertical).backward(&vertical_source)
-    print.line(vertical_source.grad[0, 0, 0, 0].item() > real32(0))
+    println(vertical_source.grad[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> rotate90_source := tensor.ones<real32>([1, 1, 2, 3]).track()
     tensor<real32> turned90 := try vision.rotate90(rotate90_source)
     math.mean(turned90).backward(&rotate90_source)
-    print.line(turned90.shape()[2] == 3 and turned90.shape()[3] == 2)
-    print.line(rotate90_source.grad[0, 0, 0, 0].item() > real32(0))
+    println(turned90.shape()[2] == 3 and turned90.shape()[3] == 2)
+    println(rotate90_source.grad[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> rotate180_source := tensor.ones<real32>([1, 1, 2, 3]).track()
     tensor<real32> turned180 := try vision.rotate180(rotate180_source)
     math.mean(turned180).backward(&rotate180_source)
-    print.line(rotate180_source.grad[0, 0, 0, 0].item() > real32(0))
+    println(rotate180_source.grad[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> rotate270_source := tensor.ones<real32>([1, 1, 2, 3]).track()
     tensor<real32> turned270 := try vision.rotate270(rotate270_source)
     math.mean(turned270).backward(&rotate270_source)
-    print.line(turned270.shape()[2] == 3 and turned270.shape()[3] == 2)
-    print.line(rotate270_source.grad[0, 0, 0, 0].item() > real32(0))
+    println(turned270.shape()[2] == 3 and turned270.shape()[3] == 2)
+    println(rotate270_source.grad[0, 0, 0, 0].item() > real32(0))
     tensor<real32> high_crop_source := tensor.ones<real32>([1, 1, 1, 1]).track()
     tensor<real32> high_crop := try vision.crop(
         high_crop_source, top = 0, left = 0, height = 1, width = 1
     )
     math.mean((high_crop * high_crop)).backward(&high_crop_source, track = true)
     tensor<real32> high_crop_first := high_crop_source.grad
-    print.line(high_crop_first.is_tracked())
+    println(high_crop_first.is_tracked())
     math.mean(high_crop_first).backward(&high_crop_source)
     real32 high_crop_total := high_crop_source.grad.untrack()[0, 0, 0, 0].item()
-    print.line(high_crop_total > real32(3.99) and high_crop_total < real32(4.01))
+    println(high_crop_total > real32(3.99) and high_crop_total < real32(4.01))
 
     tensor<real32> high_resize_source := tensor.ones<real32>([1, 1, 1, 1]).track()
     tensor<real32> high_resize := try vision.resize(high_resize_source, height = 2, width = 2)
     math.mean((high_resize * high_resize)).backward(&high_resize_source, track = true)
     tensor<real32> high_resize_first := high_resize_source.grad
-    print.line(high_resize_first.is_tracked())
+    println(high_resize_first.is_tracked())
     math.mean(high_resize_first).backward(&high_resize_source)
     real32 high_resize_total := high_resize_source.grad.untrack()[0, 0, 0, 0].item()
-    print.line(high_resize_total > real32(3.99) and high_resize_total < real32(4.01))
+    println(high_resize_total > real32(3.99) and high_resize_total < real32(4.01))
 
     tensor<real32> high_horizontal_source := tensor.ones<real32>([1, 1, 1, 1]).track()
     tensor<real32> high_horizontal := try vision.flip_horizontal(high_horizontal_source)
     math.mean((high_horizontal * high_horizontal)).backward(&high_horizontal_source, track = true)
     tensor<real32> high_horizontal_first := high_horizontal_source.grad
-    print.line(high_horizontal_first.is_tracked())
+    println(high_horizontal_first.is_tracked())
     math.mean(high_horizontal_first).backward(&high_horizontal_source)
     real32 high_horizontal_total := high_horizontal_source.grad.untrack()[0, 0, 0, 0].item()
-    print.line(high_horizontal_total > real32(3.99) and high_horizontal_total < real32(4.01))
+    println(high_horizontal_total > real32(3.99) and high_horizontal_total < real32(4.01))
 
     tensor<real32> high_vertical_source := tensor.ones<real32>([1, 1, 1, 1]).track()
     tensor<real32> high_vertical := try vision.flip_vertical(high_vertical_source)
     math.mean((high_vertical * high_vertical)).backward(&high_vertical_source, track = true)
     tensor<real32> high_vertical_first := high_vertical_source.grad
-    print.line(high_vertical_first.is_tracked())
+    println(high_vertical_first.is_tracked())
     math.mean(high_vertical_first).backward(&high_vertical_source)
     real32 high_vertical_total := high_vertical_source.grad.untrack()[0, 0, 0, 0].item()
-    print.line(high_vertical_total > real32(3.99) and high_vertical_total < real32(4.01))
+    println(high_vertical_total > real32(3.99) and high_vertical_total < real32(4.01))
 
     tensor<real32> high_rotate90_source := tensor.ones<real32>([1, 1, 1, 1]).track()
     tensor<real32> high_rotate90 := try vision.rotate90(high_rotate90_source)
     math.mean((high_rotate90 * high_rotate90)).backward(&high_rotate90_source, track = true)
     tensor<real32> high_rotate90_first := high_rotate90_source.grad
-    print.line(high_rotate90_first.is_tracked())
+    println(high_rotate90_first.is_tracked())
     math.mean(high_rotate90_first).backward(&high_rotate90_source)
     real32 high_rotate90_total := high_rotate90_source.grad.untrack()[0, 0, 0, 0].item()
-    print.line(high_rotate90_total > real32(3.99) and high_rotate90_total < real32(4.01))
+    println(high_rotate90_total > real32(3.99) and high_rotate90_total < real32(4.01))
 
     tensor<real32> high_rotate180_source := tensor.ones<real32>([1, 1, 1, 1]).track()
     tensor<real32> high_rotate180 := try vision.rotate180(high_rotate180_source)
     math.mean((high_rotate180 * high_rotate180)).backward(&high_rotate180_source, track = true)
     tensor<real32> high_rotate180_first := high_rotate180_source.grad
-    print.line(high_rotate180_first.is_tracked())
+    println(high_rotate180_first.is_tracked())
     math.mean(high_rotate180_first).backward(&high_rotate180_source)
     real32 high_rotate180_total := high_rotate180_source.grad.untrack()[0, 0, 0, 0].item()
-    print.line(high_rotate180_total > real32(3.99) and high_rotate180_total < real32(4.01))
+    println(high_rotate180_total > real32(3.99) and high_rotate180_total < real32(4.01))
 
     tensor<real32> high_rotate270_source := tensor.ones<real32>([1, 1, 1, 1]).track()
     tensor<real32> high_rotate270 := try vision.rotate270(high_rotate270_source)
     math.mean((high_rotate270 * high_rotate270)).backward(&high_rotate270_source, track = true)
     tensor<real32> high_rotate270_first := high_rotate270_source.grad
-    print.line(high_rotate270_first.is_tracked())
+    println(high_rotate270_first.is_tracked())
     math.mean(high_rotate270_first).backward(&high_rotate270_source)
     real32 high_rotate270_total := high_rotate270_source.grad.untrack()[0, 0, 0, 0].item()
-    print.line(high_rotate270_total > real32(3.99) and high_rotate270_total < real32(4.01))
+    println(high_rotate270_total > real32(3.99) and high_rotate270_total < real32(4.01))
 
     return 0
 
@@ -132,7 +132,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/geometry-autograd.qui")"
@@ -151,14 +151,14 @@ int | error run()
     tensor<real32> gray_source := tensor.ones<real32>([1, 3, 2, 2]).track()
     tensor<real32> gray := try vision.grayscale(gray_source)
     math.mean(gray).backward(&gray_source)
-    print.line(gray.is_tracked())
-    print.line(gray_source.has_grad())
+    println(gray.is_tracked())
+    println(gray_source.has_grad())
 
     tensor<real32> blur_source := tensor.ones<real32>([1, 1, 3, 3]).track()
     tensor<real32> blurred := try vision.blur(blur_source, radius = 1)
     math.mean(blurred).backward(&blur_source)
-    print.line(blurred.is_tracked())
-    print.line(blur_source.has_grad())
+    println(blurred.is_tracked())
+    println(blur_source.has_grad())
 
     tensor<real32> filter_source := tensor.ones<real32>([1, 1, 3, 3]).track()
     tensor<real32> kernel := tensor.ones<real32>([3, 3])
@@ -166,45 +166,45 @@ int | error run()
         filter_source, kernel, real32(1), real32(0)
     )
     math.mean(filtered).backward(&filter_source)
-    print.line(filtered.is_tracked())
-    print.line(filter_source.has_grad())
+    println(filtered.is_tracked())
+    println(filter_source.has_grad())
 
     tensor<real32> high_gray_source := tensor.ones<real32>([1, 3, 1, 1]).track()
     tensor<real32> high_gray := try vision.grayscale(high_gray_source)
     math.mean((high_gray * high_gray)).backward(&high_gray_source, track = true)
     tensor<real32> high_gray_first := high_gray_source.grad
-    print.line(high_gray_first.is_tracked())
+    println(high_gray_first.is_tracked())
     math.mean(high_gray_first).backward(&high_gray_source)
-    print.line(high_gray_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
+    println(high_gray_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> high_blur_source := tensor.ones<real32>([1, 1, 2, 2]).track()
     tensor<real32> high_blur := try vision.blur(high_blur_source, radius = 1)
     math.mean((high_blur * high_blur)).backward(&high_blur_source, track = true)
     tensor<real32> high_blur_first := high_blur_source.grad
-    print.line(high_blur_first.is_tracked())
+    println(high_blur_first.is_tracked())
     math.mean(high_blur_first).backward(&high_blur_source)
-    print.line(high_blur_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
+    println(high_blur_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> high_filter_source := tensor.ones<real32>([1, 1, 2, 2]).track()
     tensor<real32> high_kernel := tensor.ones<real32>([1, 1])
     tensor<real32> high_filter := try vision.filter(high_filter_source, high_kernel)
     math.mean((high_filter * high_filter)).backward(&high_filter_source, track = true)
     tensor<real32> high_filter_first := high_filter_source.grad
-    print.line(high_filter_first.is_tracked())
+    println(high_filter_first.is_tracked())
     math.mean(high_filter_first).backward(&high_filter_source)
-    print.line(high_filter_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
+    println(high_filter_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> dilate_source := tensor.ones<real32>([1, 1, 2, 2]).track()
     tensor<real32> dilated := try vision.dilate(dilate_source, radius = 1)
     math.mean(dilated).backward(&dilate_source)
-    print.line(dilated.is_tracked())
-    print.line(dilate_source.has_grad())
+    println(dilated.is_tracked())
+    println(dilate_source.has_grad())
 
     tensor<real32> erode_source := tensor.ones<real32>([1, 1, 2, 2]).track()
     tensor<real32> eroded := try vision.erode(erode_source, radius = 1)
     math.mean(eroded).backward(&erode_source)
-    print.line(eroded.is_tracked())
-    print.line(erode_source.has_grad())
+    println(eroded.is_tracked())
+    println(erode_source.has_grad())
 
     tensor<real32> high_dilate_values := tensor.zeros<real32>([1, 1, 2, 2])
     high_dilate_values[0, 0, 0, 0] = real32(1)
@@ -215,9 +215,9 @@ int | error run()
     tensor<real32> high_dilate := try vision.dilate(high_dilate_source, radius = 1)
     math.mean((high_dilate * high_dilate)).backward(&high_dilate_source, track = true)
     tensor<real32> high_dilate_first := high_dilate_source.grad
-    print.line(high_dilate_first.is_tracked())
+    println(high_dilate_first.is_tracked())
     math.mean(high_dilate_first).backward(&high_dilate_source)
-    print.line(high_dilate_source.grad.untrack()[0, 0, 1, 1].item() > real32(0))
+    println(high_dilate_source.grad.untrack()[0, 0, 1, 1].item() > real32(0))
 
     tensor<real32> high_erode_values := tensor.zeros<real32>([1, 1, 2, 2])
     high_erode_values[0, 0, 0, 0] = real32(1)
@@ -228,9 +228,9 @@ int | error run()
     tensor<real32> high_erode := try vision.erode(high_erode_source, radius = 1)
     math.mean((high_erode * high_erode)).backward(&high_erode_source, track = true)
     tensor<real32> high_erode_first := high_erode_source.grad
-    print.line(high_erode_first.is_tracked())
+    println(high_erode_first.is_tracked())
     math.mean(high_erode_first).backward(&high_erode_source)
-    print.line(high_erode_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
+    println(high_erode_source.grad.untrack()[0, 0, 0, 0].item() > real32(0))
 
     tensor<real32> threshold_source := tensor.ones<real32>([1, 1, 2, 2]).track()
     tensor<real32> | error thresholded := vision.threshold(
@@ -242,7 +242,7 @@ int | error run()
             threshold_rejected = false
         error
             threshold_rejected = true
-    print.line(threshold_rejected)
+    println(threshold_rejected)
     return 0
 
 int | error result := run()
@@ -250,7 +250,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 floating_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/floating-vision-autograd.qui")"
@@ -299,12 +299,12 @@ int | error run()
     // gradient divided by factor * factor; uncovered samples receive zero.
     tensor<real32> source := pattern(2, 1, 5, 7).track()
     tensor<real32> reduced := try vision.downsample_mean(source, 2)
-    print.line(reduced.is_tracked())
+    println(reduced.is_tracked())
     math.mean(reduced).backward(&source)
     // mean over 2 * 2 * 3 outputs, then / 4 per block sample
     real32 expected := real32(1) / real32(48)
-    print.line(source.grad[1, 0, 3, 5].item() == expected)
-    print.line(source.grad[0, 0, 4, 0].item() == real32(0) and source.grad[0, 0, 0, 6].item() == real32(0))
+    println(source.grad[1, 0, 3, 5].item() == expected)
+    println(source.grad[0, 0, 4, 0].item() == real32(0) and source.grad[0, 0, 0, 6].item() == real32(0))
 
     // A tracked non-contiguous view is copied with one graph-preserving
     // gather and then uses the native kernel; values and gradients match the
@@ -315,12 +315,12 @@ int | error run()
     tensor<real32> native_source := values.track()
     tensor<real32> portable := try vision.downsample_mean(view_source, 3)
     tensor<real32> native_result := try vision.downsample_mean(native_source, 3)
-    print.line(view_source.is_contiguous() == false)
-    print.line(differences(portable.untrack(), native_result.untrack()))
+    println(view_source.is_contiguous() == false)
+    println(differences(portable.untrack(), native_result.untrack()))
     tensor<real32> weights := pattern(1, 2, 2, 2)
     math.mean(portable * weights).backward(&view_source)
     math.mean(native_result * weights).backward(&native_source)
-    print.line(differences(view_source.grad, native_source.grad))
+    println(differences(view_source.grad, native_source.grad))
 
     // backward(track = true): the first gradient stays differentiable.
     // L = mean(y * y) over a 2 x 2 result of ones: dL/dx = y / 8 = 0.125,
@@ -329,10 +329,10 @@ int | error run()
     tensor<real32> high := try vision.downsample_mean(high_source, 2)
     math.mean(high * high).backward(&high_source, track = true)
     tensor<real32> high_first := high_source.grad
-    print.line(high_first.is_tracked())
-    print.line(high_first.untrack()[0, 0, 2, 1].item() == real32(0.125))
+    println(high_first.is_tracked())
+    println(high_first.untrack()[0, 0, 2, 1].item() == real32(0.125))
     math.mean(high_first).backward(&high_source)
-    print.line(high_source.grad.untrack()[0, 0, 3, 3].item() == real32(0.1328125))
+    println(high_source.grad.untrack()[0, 0, 3, 3].item() == real32(0.1328125))
 
     // Third order alternates between the block mean and its adjoint.
     tensor<real32> third_source := tensor.ones<real32>([1, 1, 4, 4]).track()
@@ -341,12 +341,12 @@ int | error run()
     tensor<real32> third_first := third_source.grad
     math.mean(third_first * third_first).backward(&third_source, track = true)
     tensor<real32> third_second := third_source.grad
-    print.line(third_second.is_tracked())
-    print.line(third_second.untrack()[0, 0, 0, 0].item() == real32(0.1962890625))
+    println(third_second.is_tracked())
+    println(third_second.untrack()[0, 0, 0, 0].item() == real32(0.1962890625))
     // With y = 1: d mean(3y^2/16 + 9y^3/1024) / dx = (6/16 + 27/1024) / 16 =
     // 411/16384, accumulated onto 3216/16384.
     math.mean(third_second).backward(&third_source)
-    print.line(third_source.grad.untrack()[0, 0, 1, 3].item() == real32(0.22137451171875))
+    println(third_source.grad.untrack()[0, 0, 1, 3].item() == real32(0.22137451171875))
 
     // The portable composition gives the native values and gradients, also
     // below a transpose and through backward(track = true).
@@ -354,21 +354,21 @@ int | error run()
     tensor<real32> portable_high := pattern(2, 2, 9, 11).track()
     tensor<real32> native_blocks := try vision.downsample_mean(native_high, 3)
     tensor<real32> portable_blocks := composition.block_mean<real32>(portable_high, 3)
-    print.line(differences(native_blocks.untrack(), portable_blocks.untrack()))
+    println(differences(native_blocks.untrack(), portable_blocks.untrack()))
     tensor<real32> block_weights := pattern(2, 2, 3, 3)
     math.mean(native_blocks.transpose(2, 3) * block_weights * native_blocks.transpose(2, 3)).backward(&native_high, track = true)
     math.mean(portable_blocks.transpose(2, 3) * block_weights * portable_blocks.transpose(2, 3)).backward(&portable_high, track = true)
     tensor<real32> native_high_first := native_high.grad
     tensor<real32> portable_high_first := portable_high.grad
-    print.line(differences(native_high_first.untrack(), portable_high_first.untrack()))
+    println(differences(native_high_first.untrack(), portable_high_first.untrack()))
     math.mean(native_high_first.transpose(2, 3) * native_high_first.transpose(2, 3)).backward(&native_high)
     math.mean(portable_high_first.transpose(2, 3) * portable_high_first.transpose(2, 3)).backward(&portable_high)
-    print.line(differences(native_high.grad.untrack(), portable_high.grad.untrack()))
+    println(differences(native_high.grad.untrack(), portable_high.grad.untrack()))
 
     tensor<real64> wide_source := tensor.ones<real64>([1, 3, 3]).track()
     tensor<real64> wide := try vision.downsample_mean(wide_source, 2)
     math.mean(wide).backward(&wide_source)
-    print.line(wide_source.grad[0, 1, 1].item() == 0.25 and wide_source.grad[0, 2, 2].item() == 0.0)
+    println(wide_source.grad[0, 1, 1].item() == 0.25 and wide_source.grad[0, 2, 2].item() == 0.0)
     return 0
 
 int | error result := run()
@@ -376,7 +376,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-autograd.qui")"

@@ -68,71 +68,71 @@ int | error run()
 
     tensor<nat8> cpu_crop := try vision.crop(cpu, 0, 0, 2, 2)
     tensor<nat8> gpu_crop := (try vision.crop(device_pixels, 0, 0, 2, 2)).cpu()
-    print.line(cpu_crop[0, 1, 1].item() == gpu_crop[0, 1, 1].item())
+    println(cpu_crop[0, 1, 1].item() == gpu_crop[0, 1, 1].item())
 
     tensor<nat8> cpu_resize := try vision.resize(cpu, 2, 2)
     tensor<nat8> gpu_resize := (try vision.resize(device_pixels, 2, 2)).cpu()
-    print.line(cpu_resize[0, 0, 0].item() == gpu_resize[0, 0, 0].item())
+    println(cpu_resize[0, 0, 0].item() == gpu_resize[0, 0, 0].item())
 
     tensor<nat8> cpu_flip := try vision.flip_horizontal(cpu)
     tensor<nat8> gpu_flip := (try vision.flip_horizontal(device_pixels)).cpu()
-    print.line(cpu_flip[0, 1, 1].item() == gpu_flip[0, 1, 1].item())
+    println(cpu_flip[0, 1, 1].item() == gpu_flip[0, 1, 1].item())
 
     tensor<nat8> cpu_rotate := try vision.rotate90(cpu)
     tensor<nat8> gpu_rotate := (try vision.rotate90(device_pixels)).cpu()
-    print.line(cpu_rotate[0, 0, 1].item() == gpu_rotate[0, 0, 1].item())
+    println(cpu_rotate[0, 0, 1].item() == gpu_rotate[0, 0, 1].item())
 
     tensor<nat8> cpu_rotate180 := try vision.rotate180(cpu)
     tensor<nat8> gpu_rotate180 := (try vision.rotate180(device_pixels)).cpu()
-    print.line(cpu_rotate180[0, 0, 0].item() == gpu_rotate180[0, 0, 0].item())
+    println(cpu_rotate180[0, 0, 0].item() == gpu_rotate180[0, 0, 0].item())
 
     tensor<nat8> cpu_rotate270 := try vision.rotate270(cpu)
     tensor<nat8> gpu_rotate270 := (try vision.rotate270(device_pixels)).cpu()
-    print.line(cpu_rotate270[0, 1, 0].item() == gpu_rotate270[0, 1, 0].item())
+    println(cpu_rotate270[0, 1, 0].item() == gpu_rotate270[0, 1, 0].item())
 
     tensor<nat8> cpu_gray := try vision.grayscale(cpu)
     tensor<nat8> gpu_gray := (try vision.grayscale(device_pixels)).cpu()
-    print.line(cpu_gray[0, 0, 0].item() == gpu_gray[0, 0, 0].item())
+    println(cpu_gray[0, 0, 0].item() == gpu_gray[0, 0, 0].item())
 
     tensor<nat8> cpu_threshold := try vision.threshold(cpu, nat8(60))
     tensor<nat8> gpu_threshold := (try vision.threshold(device_pixels, nat8(60))).cpu()
-    print.line(cpu_threshold[0, 0, 0].item() == gpu_threshold[0, 0, 0].item())
+    println(cpu_threshold[0, 0, 0].item() == gpu_threshold[0, 0, 0].item())
 
     tensor<nat8> cpu_blur := try vision.blur(cpu, 1)
     tensor<nat8> gpu_blur := (try vision.blur(device_pixels, 1)).cpu()
-    print.line(cpu_blur[0, 1, 1].item() == gpu_blur[0, 1, 1].item())
+    println(cpu_blur[0, 1, 1].item() == gpu_blur[0, 1, 1].item())
 
     tensor<int64> kernel := tensor.zeros<int64>([3, 3])
     kernel[1, 1] = 1
     tensor<nat8> cpu_filter := try vision.filter(cpu, kernel)
     tensor<nat8> gpu_filter := (try vision.filter(device_pixels, kernel.gpu($GPU_INDEX))).cpu()
-    print.line(cpu_filter[0, 1, 1].item() == gpu_filter[0, 1, 1].item())
+    println(cpu_filter[0, 1, 1].item() == gpu_filter[0, 1, 1].item())
 
     tensor<nat8> cpu_dilate := try vision.dilate(cpu, 1)
     tensor<nat8> gpu_dilate := (try vision.dilate(device_pixels, 1)).cpu()
-    print.line(cpu_dilate[0, 1, 1].item() == gpu_dilate[0, 1, 1].item())
+    println(cpu_dilate[0, 1, 1].item() == gpu_dilate[0, 1, 1].item())
 
     tensor<nat8> cpu_erode := try vision.erode(cpu, 1)
     tensor<nat8> gpu_erode := (try vision.erode(device_pixels, 1)).cpu()
-    print.line(cpu_erode[0, 1, 1].item() == gpu_erode[0, 1, 1].item())
+    println(cpu_erode[0, 1, 1].item() == gpu_erode[0, 1, 1].item())
 
     tensor<nat8> cpu_huge_blur := try vision.blur(cpu, 2147483647)
     tensor<nat8> gpu_huge_blur := (try vision.blur(device_pixels, 2147483647)).cpu()
-    print.line(cpu_huge_blur[0, 1, 1].item() == gpu_huge_blur[0, 1, 1].item())
+    println(cpu_huge_blur[0, 1, 1].item() == gpu_huge_blur[0, 1, 1].item())
 
     tensor<nat8> cpu_huge_dilate := try vision.dilate(cpu, 2147483647)
     tensor<nat8> gpu_huge_dilate := (try vision.dilate(device_pixels, 2147483647)).cpu()
-    print.line(cpu_huge_dilate[0, 1, 1].item() == gpu_huge_dilate[0, 1, 1].item())
+    println(cpu_huge_dilate[0, 1, 1].item() == gpu_huge_dilate[0, 1, 1].item())
 
     tensor<nat8> cpu_huge_erode := try vision.erode(cpu, 2147483647)
     tensor<nat8> gpu_huge_erode := (try vision.erode(device_pixels, 2147483647)).cpu()
-    print.line(cpu_huge_erode[0, 1, 1].item() == gpu_huge_erode[0, 1, 1].item())
+    println(cpu_huge_erode[0, 1, 1].item() == gpu_huge_erode[0, 1, 1].item())
 
     tensor<real32> cpu_float := tensor.ones<real32>([1, 2, 3])
     tensor<real32> gpu_float := cpu_float.gpu($GPU_INDEX)
     tensor<real32> cpu_float_flip := try vision.flip_vertical(cpu_float)
     tensor<real32> gpu_float_flip := (try vision.flip_vertical(gpu_float)).cpu()
-    print.line(cpu_float_flip[0, 1, 2].item() == gpu_float_flip[0, 1, 2].item())
+    println(cpu_float_flip[0, 1, 2].item() == gpu_float_flip[0, 1, 2].item())
 
     tensor<real32> cpu_float_blur := try vision.blur(cpu_float, radius = 1)
     tensor<real32> gpu_float_blur_source := gpu_float.track()
@@ -140,9 +140,9 @@ int | error run()
         gpu_float_blur_source, radius = 1
     )
     tensor<real32> gpu_float_blur := gpu_float_blur_tracked.untrack().cpu()
-    print.line(cpu_float_blur[0, 1, 2].item() == gpu_float_blur[0, 1, 2].item())
+    println(cpu_float_blur[0, 1, 2].item() == gpu_float_blur[0, 1, 2].item())
     math.mean(gpu_float_blur_tracked).backward(&gpu_float_blur_source)
-    print.line(gpu_float_blur_source.has_grad())
+    println(gpu_float_blur_source.has_grad())
 
     // Block means: Vision's device kernels use the CPU accumulation order, so
     // results match exactly, including a divisor that is not a power of two.
@@ -160,7 +160,7 @@ int | error run()
                 block_index += 1
     tensor<real32> cpu_block_mean := try vision.downsample_mean(cpu_blocks, 3)
     tensor<real32> gpu_block_mean_device := try vision.downsample_mean(cpu_blocks.gpu($GPU_INDEX), 3)
-    print.line(gpu_block_mean_device.device() == $GPU_INDEX)
+    println(gpu_block_mean_device.device() == $GPU_INDEX)
     tensor<real32> gpu_block_mean := gpu_block_mean_device.cpu()
     tensor<nat8> cpu_block_bytes_mean := try vision.downsample_mean(cpu_block_bytes, 3)
     tensor<nat8> gpu_block_bytes_mean := (try vision.downsample_mean(cpu_block_bytes.gpu($GPU_INDEX), 3)).cpu()
@@ -173,8 +173,8 @@ int | error run()
                     block_differences += 1
                 if cpu_block_bytes_mean[c, y, x].item() != gpu_block_bytes_mean[c, y, x].item()
                     byte_block_differences += 1
-    print.line(block_differences == 0)
-    print.line(byte_block_differences == 0)
+    println(block_differences == 0)
+    println(byte_block_differences == 0)
 
     tensor<real32> cpu_block_source := cpu_blocks.track()
     tensor<real32> cpu_block_tracked := try vision.downsample_mean(cpu_block_source, 3)
@@ -189,7 +189,7 @@ int | error run()
             for 0 <= nat x < 14
                 if cpu_block_source.grad[c, y, x].item() != gpu_block_grad[c, y, x].item()
                     grad_differences += 1
-    print.line(gpu_block_source.grad.device() == $GPU_INDEX and grad_differences == 0)
+    println(gpu_block_source.grad.device() == $GPU_INDEX and grad_differences == 0)
 
     // A tracked strided view and a strided upstream gradient (transpose after
     // the block mean) both use the Vision kernels and match the CPU exactly.
@@ -211,7 +211,7 @@ int | error run()
             for 0 <= nat x < 10
                 if cpu_view_source.grad[c, y, x].item() != gpu_view_grad[c, y, x].item()
                     view_differences += 1
-    print.line(gpu_view_source.grad.device() == $GPU_INDEX and view_differences == 0)
+    println(gpu_view_source.grad.device() == $GPU_INDEX and view_differences == 0)
 
     // The portable composition stays on the device; nat8 and power-of-two
     // floating block means match the Vision kernels exactly.
@@ -229,7 +229,7 @@ int | error run()
             for 0 <= nat x < 7
                 if portable_quarter[c, y, x].item() != native_quarter[c, y, x].item()
                     portable_differences += 1
-    print.line(portable_quarter_device.device() == $GPU_INDEX and portable_differences == 0)
+    println(portable_quarter_device.device() == $GPU_INDEX and portable_differences == 0)
 
     // backward(track = true) on the device: the first gradient is a tracked
     // spread whose own backward is the block mean, and higher orders keep
@@ -244,7 +244,7 @@ int | error run()
     bool high_first_ok := high_first.is_tracked() and high_first.device() == $GPU_INDEX
     high_first_ok = high_first_ok and high_first.untrack().cpu()[0, 0, 2, 1].item() == real32(0.125)
     math.mean(high_first.transpose(2, 3)).backward(&high_source)
-    print.line(high_first_ok and high_source.grad.untrack().cpu()[0, 0, 3, 3].item() == real32(0.1328125))
+    println(high_first_ok and high_source.grad.untrack().cpu()[0, 0, 3, 3].item() == real32(0.1328125))
     tensor<real32> third_source := tensor.ones<real32>([1, 1, 4, 4]).gpu($GPU_INDEX).track()
     tensor<real32> third := try vision.downsample_mean(third_source, 2)
     math.mean(third * third * third).backward(&third_source, track = true)
@@ -253,7 +253,7 @@ int | error run()
     tensor<real32> third_second := third_source.grad
     bool third_ok := third_second.is_tracked() and third_second.untrack().cpu()[0, 0, 0, 0].item() == real32(0.1962890625)
     math.mean(third_second).backward(&third_source)
-    print.line(third_ok and third_source.grad.untrack().cpu()[0, 0, 1, 3].item() == real32(0.22137451171875))
+    println(third_ok and third_source.grad.untrack().cpu()[0, 0, 1, 3].item() == real32(0.22137451171875))
 
     // Normal-range values match the CPU exactly (above). A GPU may flush
     // subnormal real32 values to zero (Metal does); it must never produce
@@ -268,7 +268,7 @@ int | error run()
         real32 gpu_value := gpu_subnormal[0, 0, x].item()
         if gpu_value != cpu_subnormal[0, 0, x].item() and gpu_value != real32(0.0)
             subnormal_ok = false
-    print.line(subnormal_ok)
+    println(subnormal_ok)
 
     if $IS_METAL
         tensor<real64> double_pixels := tensor.ones<real64>([1, 4, 6]).gpu($GPU_INDEX)
@@ -282,7 +282,7 @@ int | error run()
         print(double_rejected)
     else
         print(true)
-    print.line()
+    println()
     return 0
 
 int | error result := run()
@@ -290,7 +290,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 expected="$(printf 'true\n%.0s' {1..28})"
@@ -350,7 +350,7 @@ int | error run()
         tensor<nat8> reduced_bytes := try vision.downsample_mean(device_bytes, 3)
         tensor<real32> picked := reduced.gather([5], [])
         picked.backward(&source)
-    print.line(source.grad.device() == $GPU_INDEX)
+    println(source.grad.device() == $GPU_INDEX)
     return 0
 
 int | error result := run()
@@ -358,7 +358,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
     counter_output="$(QUIDRA_METAL_STREAM=1 QUIDRA_COUNTERS="$TMP/stream-counters.jsonl" QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" run "$TMP/stream-counters-real-gpu.qui")"
     if [[ "$counter_output" != "true" ]]; then
@@ -395,7 +395,7 @@ int | error run()
     tensor<$element> pixels := tensor<$element>([1, 4, 4], gpu = $GPU_INDEX)
     pixels[0, 0, 0] = $element(1)
     tensor<$element> reduced := try vision.downsample_mean(pixels, 2)
-    print.line(reduced.cpu()[0, 0, 0].item())
+    println(reduced.cpu()[0, 0, 0].item())
     return 0
 
 int | error result := run()
@@ -403,7 +403,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
         set +e
         QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/uninitialized-$element.qui" >"$TMP/uninitialized.out" 2>"$TMP/uninitialized.err"

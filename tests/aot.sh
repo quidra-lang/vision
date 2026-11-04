@@ -21,12 +21,12 @@ int | error run()
         "$TMP/roundtrip.png",
         channels = 3
     )
-    print.line(decoded.shape()[0] == 3)
-    print.line(decoded.shape()[1] == 1)
-    print.line(decoded.shape()[2] == 1)
-    print.line(decoded[0, 0, 0].item() == nat8(11))
-    print.line(decoded[1, 0, 0].item() == nat8(22))
-    print.line(decoded[2, 0, 0].item() == nat8(33))
+    println(decoded.shape()[0] == 3)
+    println(decoded.shape()[1] == 1)
+    println(decoded.shape()[2] == 1)
+    println(decoded[0, 0, 0].item() == nat8(11))
+    println(decoded[1, 0, 0].item() == nat8(22))
+    println(decoded[2, 0, 0].item() == nat8(33))
     return 0
 
 int | error result := run()
@@ -34,7 +34,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 OUTPUT="$TMP/vision-aot"

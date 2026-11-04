@@ -11,7 +11,7 @@ int | error transform_image(tensor<nat8> pixels)
     void | error written := vision.write("output.png", edges)
     match written
         void
-            print.line("saved")
+            println("saved")
         error problem
             return problem
     return 0
@@ -24,6 +24,6 @@ match loaded
             int
                 ignored := transformed
             error problem
-                print.line(problem)
+                println(problem)
     error problem
-        print.line(problem)
+        println(problem)

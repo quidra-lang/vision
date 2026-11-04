@@ -20,7 +20,7 @@ match bad_resize
         resize_rejected = false
     error
         resize_rejected = true
-print.line(resize_rejected)
+println(resize_rejected)
 
 bool crop_rejected := false
 tensor<nat8> | error bad_crop := vision.crop(pixels, top = 1, left = 2, height = 2, width = 2)
@@ -29,7 +29,7 @@ match bad_crop
         crop_rejected = false
     error
         crop_rejected = true
-print.line(crop_rejected)
+println(crop_rejected)
 
 bool grayscale_rejected := false
 tensor<nat8> two_channels := tensor.zeros<nat8>([2, 2, 2])
@@ -39,7 +39,7 @@ match bad_grayscale
         grayscale_rejected = false
     error
         grayscale_rejected = true
-print.line(grayscale_rejected)
+println(grayscale_rejected)
 
 bool blur_rejected := false
 tensor<nat8> | error bad_blur := vision.blur(pixels, radius = -1)
@@ -48,7 +48,7 @@ match bad_blur
         blur_rejected = false
     error
         blur_rejected = true
-print.line(blur_rejected)
+println(blur_rejected)
 
 bool filter_rejected := false
 tensor<int64> kernel := tensor.ones<int64>([3, 3])
@@ -58,7 +58,7 @@ match bad_filter
         filter_rejected = false
     error
         filter_rejected = true
-print.line(filter_rejected)
+println(filter_rejected)
 
 bool dilate_rejected := false
 tensor<nat8> | error bad_dilate := vision.dilate(pixels, radius = -1)
@@ -67,7 +67,7 @@ match bad_dilate
         dilate_rejected = false
     error
         dilate_rejected = true
-print.line(dilate_rejected)
+println(dilate_rejected)
 
 bool erode_rejected := false
 tensor<nat8> | error bad_erode := vision.erode(pixels, radius = -1)
@@ -76,7 +76,7 @@ match bad_erode
         erode_rejected = false
     error
         erode_rejected = true
-print.line(erode_rejected)
+println(erode_rejected)
 
 bool rank_rejected := false
 tensor<nat8> rank_two := tensor.zeros<nat8>([2, 3])
@@ -86,7 +86,7 @@ match bad_flip
         rank_rejected = false
     error
         rank_rejected = true
-print.line(rank_rejected)
+println(rank_rejected)
 QUI
 
 output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/boundary.qui")"
@@ -134,7 +134,7 @@ int | error run()
                 differences += 1
             if full_crop[0, y, x].item() != expected
                 differences += 1
-    print.line(differences)
+    println(differences)
     return 0
 
 int | error result := run()
@@ -142,7 +142,7 @@ match result
     int
         int ignored := result
     error problem
-        print.line(problem)
+        println(problem)
 QUI
 
 properties_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/properties.qui")"
@@ -172,17 +172,17 @@ bool rejects_bytes(tensor<nat8> pixels, int factor)
 
 tensor<real32> image := tensor.zeros<real32>([1, 4, 6])
 tensor<nat8> bytes := tensor.zeros<nat8>([1, 4, 6])
-print.line(rejects_float(image, 0))
-print.line(rejects_float(image, -2))
-print.line(rejects_float(image, 5))
-print.line(rejects_float(tensor.zeros<real32>([1, 6, 4]), 5))
-print.line(rejects_float(tensor.zeros<real32>([4, 6]), 2))
-print.line(rejects_float(tensor.zeros<real32>([1, 0, 6]), 1))
-print.line(rejects_bytes(bytes, 0))
-print.line(rejects_bytes(bytes, 7))
-print.line(rejects_bytes(tensor.zeros<nat8>([4, 6]), 2))
-print.line(rejects_float(image, 4))
-print.line(rejects_bytes(bytes, 1))
+println(rejects_float(image, 0))
+println(rejects_float(image, -2))
+println(rejects_float(image, 5))
+println(rejects_float(tensor.zeros<real32>([1, 6, 4]), 5))
+println(rejects_float(tensor.zeros<real32>([4, 6]), 2))
+println(rejects_float(tensor.zeros<real32>([1, 0, 6]), 1))
+println(rejects_bytes(bytes, 0))
+println(rejects_bytes(bytes, 7))
+println(rejects_bytes(tensor.zeros<nat8>([4, 6]), 2))
+println(rejects_float(image, 4))
+println(rejects_bytes(bytes, 1))
 QUI
 
 downsample_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-boundary.qui")"
@@ -206,7 +206,7 @@ for status := statuses[]
         print("{status} portable")
     else
         print("{status} error: {composition.block_native_problem(int32(status))}")
-    print.line()
+    println()
 QUI
 
 status_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/downsample-status.qui")"
@@ -236,7 +236,7 @@ match bad_shape
         print(false)
     error problem
         print(problem.code == "VISION_ARGUMENT")
-print.line()
+println()
 
 tensor<nat8> | error bad_radius := vision.dilate(pixels, radius = -1)
 match bad_radius
@@ -244,7 +244,7 @@ match bad_radius
         print(false)
     error problem
         print(problem.code == "VISION_ARGUMENT")
-print.line()
+println()
 
 tensor<real32> floating := tensor.ones<real32>([3, 2, 2]).track()
 tensor<real32> | error bad_tracked := vision.threshold(floating, cutoff = real32(0.5))
@@ -253,7 +253,7 @@ match bad_tracked
         print(false)
     error problem
         print(problem.code == "VISION_TRACKED")
-print.line()
+println()
 
 tensor<nat8> plane := tensor.zeros<nat8>([2, 2])
 tensor<nat8> | error bad_rank := vision.crop(plane, 0, 0, 1, 1)
@@ -262,7 +262,7 @@ match bad_rank
         print(false)
     error problem
         print(problem.code == "VISION_SHAPE")
-print.line()
+println()
 QUI
 codes_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-codes.qui")"
 if [[ "$codes_output" != "$(printf 'true\ntrue\ntrue\ntrue')" ]]; then
@@ -281,7 +281,7 @@ match unreadable
         print(false)
     error problem
         print(problem.code == "VISION_DECODE")
-print.line()
+println()
 
 tensor<nat8> pixels := tensor.zeros<nat8>([3, 2, 2])
 void | error unwritable := vision.write("$TMP/codes.unsupported", pixels)
@@ -290,7 +290,7 @@ match unwritable
         print(false)
     error problem
         print(problem.code == "VISION_ENCODE")
-print.line()
+println()
 QUI
 file_codes_output="$(QUIDRA_PACKAGE_PATH="$PACKAGE_ROOT" "$QUIDRA" "$TMP/vision-file-codes.qui")"
 if [[ "$file_codes_output" != "$(printf 'true\ntrue')" ]]; then
