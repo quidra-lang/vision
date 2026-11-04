@@ -56,7 +56,7 @@ tensor<T> | error crop<T>(
     for dimension := shape[]
         if dimension <= 0
             return error("vision.crop requires positive (..., C, H, W) dimensions", code = "VISION_SHAPE")
-    int height_axis := int(len(shape)) - 2
+    height_axis := int(len(shape)) - 2
     width_axis := int(len(shape)) - 1
     input_height := shape[height_axis]
     input_width := shape[width_axis]
