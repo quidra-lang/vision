@@ -200,7 +200,7 @@ int | error run()
     rgb[1, 0, 0, 0] = nat8(255)
     tensor<nat8> gray := try vision.grayscale(rgb)
     int[] gray_shape := int(gray.shape())
-    println(len(gray_shape) == 4 and gray_shape[0] == 2 and gray_shape[1] == 1)
+    println(gray_shape.len() == 4 and gray_shape[0] == 2 and gray_shape[1] == 1)
     println(gray[0, 0, 0, 0].item() == nat8(141))
     println(gray[1, 0, 0, 0].item() == nat8(76))
 
@@ -277,8 +277,8 @@ int len_all(int[] shape)
 // then the row sums top to bottom, divided once by factor * factor.
 real32 reference_mean(tensor<real32> pixels, int plane, int oy, int ox, int factor)
     int[] shape := int(pixels.shape())
-    int height := shape[int(len(shape)) - 2]
-    int width := shape[int(len(shape)) - 1]
+    int height := shape[int(shape.len()) - 2]
+    int width := shape[int(shape.len()) - 1]
     tensor<real32> flat := pixels.reshape([nat(len_all(shape))])
     real32 total := 0.0
     for: 0 <= int dy < factor
@@ -298,7 +298,7 @@ real32 reference_mean(tensor<real32> pixels, int plane, int oy, int ox, int fact
 int mismatches(tensor<real32> pixels, tensor<real32> reduced, int factor)
     int[] shape := int(pixels.shape())
     int[] reduced_shape := int(reduced.shape())
-    int rank := int(len(shape))
+    int rank := int(shape.len())
     int planes := 1
     for: 0 <= int axis < rank - 2
         if reduced_shape[axis] != shape[axis]
@@ -340,7 +340,7 @@ int | error run()
 
     tensor<real32> reduced := try vision.downsample_mean(image, 3)
     int[] reduced_shape := int(reduced.shape())
-    println(len(reduced_shape) == 3 and reduced_shape[0] == 3 and reduced_shape[1] == 3 and reduced_shape[2] == 4)
+    println(reduced_shape.len() == 3 and reduced_shape[0] == 3 and reduced_shape[1] == 3 and reduced_shape[2] == 4)
 
     // Samples outside every complete block never contribute.
     tensor<real32> edited := image.reshape([3 * 11 * 14])

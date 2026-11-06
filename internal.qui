@@ -4,8 +4,8 @@ tensor<T> convolve2d<T: numeric>(
     int padding
 )
     shape := int(pixels.shape())
-    height_axis := int(len(shape)) - 2
-    width_axis := int(len(shape)) - 1
+    height_axis := int(shape.len()) - 2
+    width_axis := int(shape.len()) - 1
     height := shape[height_axis]
     width := shape[width_axis]
     kernel_shape := int(kernel.shape())
@@ -117,8 +117,8 @@ tensor<T> native_output<T: numeric>(int[] shape, int device)
 // read.
 tensor<T> block_sum<T: numeric>(tensor<T> pixels, int factor)
     shape := int(pixels.shape())
-    height_axis := int(len(shape)) - 2
-    width_axis := int(len(shape)) - 1
+    height_axis := int(shape.len()) - 2
+    width_axis := int(shape.len()) - 1
     height := shape[height_axis]
     width := shape[width_axis]
     output_height := height / factor
