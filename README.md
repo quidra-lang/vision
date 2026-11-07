@@ -13,6 +13,8 @@ downsample factors that are not positive or exceed the image, unsupported
 grayscale channel counts, negative window radii, invalid filter kernels, and a
 zero filter divisor.
 
+On `develop`, `#value` is the ordinary zero-argument `value.len()` call. It also works automatically for custom classes and visible extensions that provide `len`; return types, errors and access/effect checks are unchanged. Standard array, string and binary lengths remain `nat`.
+
 ## Install
 
 Install a released tag; `quidra.package` declares the Quidra range that tag
