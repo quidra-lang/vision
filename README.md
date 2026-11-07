@@ -141,7 +141,7 @@ are encoded into Core's command stream and never wait for the GPU themselves, so
 a Metal kernel that fails while it runs is reported by Core at the device's next
 synchronization point (a host read, `gpu.sync`, or program exit), like any other
 GPU error. Vision's CPU kernels (the block means, their gradient spread, and
-the `uint8` filter), which also serve the fake test GPU, split their independent
+the `nat8` filter), which also serve the fake test GPU, split their independent
 output rows across Core's CPU threads with `qcore_parallel_for`, never the terms
 of one block sum. `QUIDRA_CPU_THREADS` limits the threads, and results are
 bitwise the same for every thread count. Core lends no storage of a view that
